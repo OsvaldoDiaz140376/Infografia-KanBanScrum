@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulador de flujo Kanban–Scrum · Juego de los dados</title>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+
+  --bg:#F5F7FC; --surface:#FFFFFF; --surface-2:#EEF2F8;
+  --text:#22283B; --muted:#566074; --border:#D5DBE8;
+  --brand:#1E2761; --brand-bg:#1E2761; --primary:#1E2761; --accent:#D63D45;
+  --focus:#2B6CFF;
+  --todo:#445A73;  --todo-bg:#EEF2F8;
+  --doing:#9A5B00; --doing-bg:#FFF4DB;
+  --done:#2E7D32;  --done-bg:#E7F4E8;
+  --warn-bg:#FFF1E9; --warn-border:#E8A07A; --warn-text:#7A2E0E;
+  --ok-bg:#E7F4E8;   --ok-border:#7FBF84;   --ok-text:#1B5E20;
+  --info-bg:#E8EEFF; --info-border:#9DB0F0; --info-text:#1E2761;
+  --b-warn-bg:#FFF0C2; --b-warn-tx:#6B4A00;
+  --b-hot-bg:#FFE0DA;  --b-hot-tx:#8A1C12;
+  --b-ok-bg:#DDF1DF;   --b-ok-tx:#1B5E20;
+  --b-info-bg:#E1E8FF; --b-info-tx:#1E2761;
+  --die-bg:#FFFFFF; --die-pip:#1E2761; --die-border:#1E2761;
+  --shadow:0 1px 2px rgba(20,27,77,.08),0 4px 14px rgba(20,27,77,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1230; --surface:#171C3F; --surface-2:#1F2650;
+    --text:#E9ECF8; --muted:#AAB2CC; --border:#2D3566;
+    --brand:#B9C8FF; --brand-bg:#2A3580; --primary:#4A63D8;
+    --focus:#9DB4FF;
+    --todo:#4B6482; --todo-bg:#1B2347;
+    --doing:#9A5B00; --doing-bg:#2E2610;
+    --done:#2E7D32; --done-bg:#14301A;
+    --warn-bg:#3A1F14; --warn-border:#B4562F; --warn-text:#FFD9C7;
+    --ok-bg:#12301A;   --ok-border:#3F8F48;   --ok-text:#BFE8C3;
+    --info-bg:#1B2650; --info-border:#4C61B8; --info-text:#D5DEFF;
+    --b-warn-bg:#4A3A0A; --b-warn-tx:#FFE9A8;
+    --b-hot-bg:#4A1C16;  --b-hot-tx:#FFD0C8;
+    --b-ok-bg:#163A1B;   --b-ok-tx:#BFE8C3;
+    --b-info-bg:#1F2A5E; --b-info-tx:#D5DEFF;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1230; --surface:#171C3F; --surface-2:#1F2650;
+  --text:#E9ECF8; --muted:#AAB2CC; --border:#2D3566;
+  --brand:#B9C8FF; --brand-bg:#2A3580; --primary:#4A63D8;
+  --focus:#9DB4FF;
+  --todo:#4B6482; --todo-bg:#1B2347;
+  --doing:#9A5B00; --doing-bg:#2E2610;
+  --done:#2E7D32; --done-bg:#14301A;
+  --warn-bg:#3A1F14; --warn-border:#B4562F; --warn-text:#FFD9C7;
+  --ok-bg:#12301A;   --ok-border:#3F8F48;   --ok-text:#BFE8C3;
+  --info-bg:#1B2650; --info-border:#4C61B8; --info-text:#D5DEFF;
+  --b-warn-bg:#4A3A0A; --b-warn-tx:#FFE9A8;
+  --b-hot-bg:#4A1C16;  --b-hot-tx:#FFD0C8;
+  --b-ok-bg:#163A1B;   --b-ok-tx:#BFE8C3;
+  --b-info-bg:#1F2A5E; --b-info-tx:#D5DEFF;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none !important}
+body{
+  margin:0;min-height:100%;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px;line-height:1.45;
+}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+.top{background:var(--brand-bg);color:#fff;padding:18px 0 16px}
+.top h1{margin:0;font-size:1.5rem;line-height:1.2}
+.top .sub{margin:4px 0 0;opacity:.9;font-size:.98rem}
+.volver{display:inline-block;margin-top:12px;padding:8px 14px;border-radius:10px;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.12);color:#fff;font-weight:700;text-decoration:none}
+.volver:hover{background:rgba(255,255,255,.22);border-color:#fff}
+main{padding:18px 0 40px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+h2{margin:0 0 10px;font-size:1.2rem;color:var(--brand)}
+.muted{color:var(--muted)} .small{font-size:.9rem}
+
+/* ---------- botones ---------- */
+.btn{min-height:44px;padding:10px 16px;border-radius:10px;border:2px solid transparent;font:inherit;font-weight:700;cursor:pointer;background:var(--surface-2);color:var(--text)}
+.btn.primary{background:var(--primary);color:#fff}
+.btn.accent{background:var(--accent);color:#fff}
+.btn.ghost{background:transparent;border-color:var(--border);color:var(--text)}
+.btn.big{font-size:1.25rem;padding:14px 26px;min-height:56px}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn:hover:not(:disabled){filter:brightness(1.07)}
+
+/* ---------- configuración ---------- */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:14px}
+.field label{display:block;font-weight:700;margin-bottom:5px}
+.field select,.field input{width:100%;min-height:44px;padding:8px 10px;border-radius:10px;border:2px solid var(--border);background:var(--surface);color:var(--text);font:inherit}
+.field .hint{font-size:.88rem;color:var(--muted);margin-top:4px}
+
+/* ---------- línea de estaciones ---------- */
+.pipe{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pipe .node{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border:2px solid var(--border);border-radius:999px;background:var(--surface-2)}
+.pipe .num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--todo);color:#fff;font-weight:800;font-size:.9rem}
+.pipe .nm{font-size:.92rem;font-weight:600}
+.pipe .node.me{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 2px var(--accent) inset}
+.pipe .node.me .num{background:var(--accent)}
+.pipe .you{background:var(--accent);color:#fff;border-radius:999px;font-size:.75rem;font-weight:800;padding:2px 8px}
+.pipe .arrow{color:var(--muted);font-weight:800}
+
+/* ---------- rol de la estación ---------- */
+.role-box{border:2px solid var(--info-border);background:var(--info-bg);border-radius:12px;padding:12px 14px;margin-top:8px;color:var(--text)}
+.role-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:2px}
+.role-badge{background:var(--accent);color:#fff;border-radius:999px;font-weight:800;font-size:.8rem;padding:3px 10px}
+.role-name{font-size:1.15rem;font-weight:800;color:var(--brand)}
+.role-sc{margin:2px 0 6px;color:var(--muted);font-size:.92rem}
+.role-body h3{margin:12px 0 4px;font-size:1rem;color:var(--brand)}
+.role-body p{margin:0 0 4px}
+.role-body ul{margin:.2rem 0 .2rem 1.2rem;padding:0}
+.role-body li{margin:3px 0}
+.role-imp{background:var(--surface);border:2px solid var(--info-border);border-radius:12px;padding:10px 12px;margin-top:12px}
+.role-all{margin-top:12px}
+.role-all ul{margin:.4rem 0 0 1.2rem;padding:0}
+.role-all li{margin:4px 0}
+
+/* ---------- cronómetro ---------- */
+.timerbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:8px 14px 10px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px}
+.tb-main{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.tb-time{font-size:2rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--brand);line-height:1}
+.tb-state{font-weight:700;color:var(--muted)}
+.tb-prog{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.tb-fill{height:100%;width:0;background:var(--primary);transition:width .25s linear}
+.timerbar.warn{border-color:var(--warn-border)}
+.timerbar.warn .tb-time{color:var(--warn-text)}
+.timerbar.warn .tb-fill{background:#D98A00}
+.timerbar.danger{border-color:var(--accent)}
+.timerbar.danger .tb-time{color:var(--accent);animation:pulse 1s ease-in-out infinite}
+.timerbar.danger .tb-fill{background:var(--accent)}
+.timerbar.done{border-color:var(--muted)}
+.timerbar.done .tb-time{color:var(--muted)}
+.timerbar.done .tb-fill{background:var(--muted)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+
+/* ---------- resumen ---------- */
+.summary{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+
+/* ---------- dados ---------- */
+.roll-card{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+.dice-row{display:flex;flex-wrap:wrap;gap:10px;max-width:520px}
+.dice-total{margin-top:8px;font-weight:800;font-size:1.05rem;color:var(--brand)}
+.die{display:inline-grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:64px;height:64px;padding:9px;gap:4px;background:var(--die-bg);border:2px solid var(--die-border);border-radius:14px;box-shadow:var(--shadow)}
+.die i{border-radius:50%}
+.die i.on{background:var(--die-pip)}
+.die.sm{width:30px;height:30px;padding:4px;gap:2px;border-width:1.5px;border-radius:7px;box-shadow:none}
+.die.empty{display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#566074;padding:0}
+.die.sm.empty{font-size:15px}
+.rolling .die{animation:wob .18s linear infinite}
+@keyframes wob{0%{transform:rotate(-8deg) translateY(0)}50%{transform:rotate(8deg) translateY(-5px)}100%{transform:rotate(-8deg) translateY(0)}}
+.roll-side{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.next{margin:0;font-weight:600;color:var(--brand)}
+
+/* ---------- avisos ---------- */
+.banner{grid-column:1/-1;padding:12px 14px;border-radius:12px;border:2px solid;display:flex;gap:10px;align-items:flex-start}
+.banner .bi{font-size:1.4rem;line-height:1.1}
+.banner .bt{font-weight:800;margin-bottom:2px}
+.banner ul{margin:.3rem 0 0 1.1rem;padding:0}
+.banner.warn{background:var(--warn-bg);border-color:var(--warn-border);color:var(--warn-text)}
+.banner.ok{background:var(--ok-bg);border-color:var(--ok-border);color:var(--ok-text)}
+.banner.info{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}
+.shake{animation:shk .4s}
+@keyframes shk{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.flash{outline:3px solid var(--accent);outline-offset:3px;border-radius:10px}
+
+/* ---------- tablero ---------- */
+.kpi-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.kpi{display:flex;align-items:center;gap:12px;background:var(--surface-2);border:2px solid var(--border);border-radius:12px;padding:8px 14px}
+.kpi .k-ico{font-size:1.5rem}
+.kpi .k-v{font-size:1.5rem;font-weight:800;color:var(--brand);line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .k-l{font-size:.86rem;color:var(--muted);font-weight:600;max-width:330px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--done-bg);border:2px solid var(--done);font-weight:700;font-size:.92rem}
+.board-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+.board{min-width:880px}
+.bhead,.brow{display:grid;grid-template-columns:190px repeat(3,minmax(230px,1fr))}
+.bhead>div{padding:10px 12px;color:#fff;font-weight:800;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.bhead .h-tir{background:var(--brand-bg)}
+.bhead .h-todo{background:var(--todo)}
+.bhead .h-doing{background:var(--doing)}
+.bhead .h-done{background:var(--done)}
+.bhead .cnt{background:rgba(255,255,255,.22);border-radius:999px;padding:1px 10px;font-size:.9rem}
+.brow{border-top:1px solid var(--border)}
+.cell{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:68px;min-width:0}
+.cell:empty::after{content:"—";color:var(--muted)}
+.cell.tir{background:var(--surface);position:sticky;left:0;z-index:1;gap:6px}
+.cell.todo{background:var(--todo-bg)}
+.cell.doing{background:var(--doing-bg)}
+.cell.done{background:var(--done-bg)}
+.cell.done.over{outline:3px dashed var(--done);outline-offset:-5px}
+.tir-title{font-weight:800;color:var(--brand)}
+.tir-dice{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.tir-sum{font-weight:800;margin-left:4px}
+.tir-note{font-size:.84rem;color:var(--muted)}
+.tir-gen{font-size:.84rem;border-top:1px dashed var(--border);padding-top:6px;margin-top:2px}
+.tir-gen .tir-dice{margin-top:3px}
+.tag{font-size:.86rem;font-weight:700}
+.badge{display:inline-block;padding:3px 9px;border-radius:8px;font-size:.84rem;font-weight:800;line-height:1.3}
+.badge.warn{background:var(--b-warn-bg);color:var(--b-warn-tx)}
+.badge.hot{background:var(--b-hot-bg);color:var(--b-hot-tx)}
+.badge.ok{background:var(--b-ok-bg);color:var(--b-ok-tx)}
+.badge.info{background:var(--b-info-bg);color:var(--b-info-tx)}
+.badge.wait{background:var(--surface-2);color:var(--muted)}
+
+.tcard{background:var(--surface);border:1px solid var(--border);border-left:6px solid var(--c);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:5px;box-shadow:var(--shadow);font-size:.95rem}
+.tcard.porhacer{--c:var(--todo)}
+.tcard.enproceso{--c:var(--doing)}
+.tcard.terminado{--c:var(--done)}
+.tcard[draggable="true"]{cursor:grab}
+.tcard.dragging{opacity:.5}
+.tid{font-weight:800;font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.orig{font-weight:600}
+.ttext{overflow-wrap:anywhere}
+.tm{font-size:.8rem;font-weight:800;color:var(--ok-text);font-variant-numeric:tabular-nums}
+.btn-finish{align-self:flex-start;min-height:38px;padding:6px 12px;border-radius:8px;border:0;background:var(--done);color:#fff;font:inherit;font-weight:800;cursor:pointer}
+.btn-finish:disabled{opacity:.5;cursor:not-allowed}
+.sent{font-size:.8rem;font-weight:800;color:var(--ok-text)}
+.empty-board{padding:22px;text-align:center;color:var(--muted)}
+
+/* ---------- métricas ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.stat .v{font-size:1.5rem;font-weight:800;color:var(--brand);line-height:1.1}
+.stat .l{font-size:.86rem;color:var(--muted);font-weight:600}
+
+/* ---------- bitácora ---------- */
+details>summary{cursor:pointer;font-weight:800;color:var(--brand);padding:2px 0}
+.tbl-wrap{overflow-x:auto;margin-top:10px}
+table.log{border-collapse:collapse;width:100%;min-width:640px;font-size:.92rem}
+table.log th,table.log td{border-bottom:1px solid var(--border);padding:7px 9px;text-align:left}
+table.log th{background:var(--surface-2)}
+.help h3{margin:14px 0 4px;font-size:1.02rem;color:var(--brand)}
+.help ul{margin:.3rem 0 .3rem 1.2rem;padding:0}
+.help li{margin:3px 0}
+
+/* ---------- modal ---------- */
+.overlay{position:fixed;inset:0;background:rgba(10,14,40,.62);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal{background:var(--surface);color:var(--text);border-radius:16px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.modal h2{margin-top:0}
+.modal textarea{width:100%;min-height:170px;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:.95rem;resize:vertical}
+.mactions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:14px}
+.merr{color:var(--warn-text);background:var(--warn-bg);border:2px solid var(--warn-border);border-radius:10px;padding:8px 10px;margin-top:10px;font-weight:600}
+.merr:empty{display:none}
+.chk{display:flex;gap:8px;align-items:center;margin:8px 0;font-weight:600}
+.chk input{width:20px;height:20px}
+footer{padding:6px 0 26px;text-align:center;color:var(--muted);font-size:.86rem}
+
+/* ---------- móvil: cada tirada se vuelve una tarjeta apilada ---------- */
+@media (max-width:760px){
+  .roll-card{grid-template-columns:1fr}
+  .board{min-width:0}
+  .bhead{display:none}
+  .brow{display:block;margin:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .cell{display:flex}
+  .cell.tir{position:static}
+  .cell:not(.tir)::before{content:attr(data-label);font-weight:800;font-size:.82rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  .board-scroll{border:0}
+  .tb-time{font-size:1.7rem}
+}
+@media (prefers-reduced-motion: reduce){
+  .rolling .die,.shake,.timerbar.danger .tb-time{animation:none}
+  .tb-fill{transition:none}
+}
+
+/* =====================================================================
+   MODO SCRUM
+   ===================================================================== */
+.mode-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.mode-card{display:flex;gap:12px;align-items:flex-start;border:2px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;background:var(--surface)}
+.mode-card input{margin-top:5px;width:20px;height:20px;flex:none}
+.mode-card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.mode-card:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+
+.field .chk{display:flex;font-weight:600;margin:6px 0}
+.team-rows{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.team-row{display:grid;grid-template-columns:30px minmax(0,1fr) minmax(170px,230px);gap:10px;align-items:center}
+.tr-n{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--todo);color:#fff;font-weight:800;font-size:.9rem}
+.hint.bad{color:var(--warn-text);font-weight:700}
+.hint.good{color:var(--ok-text);font-weight:700}
+.sc-roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:8px}
+.sc-role{border:2px solid var(--info-border);background:var(--info-bg);border-radius:12px;padding:10px 12px;color:var(--text)}
+.sc-role h3{margin:0 0 4px;font-size:1.02rem;color:var(--brand)}
+.sc-role p{margin:3px 0;font-size:.93rem}
+.sc-role ul{margin:.2rem 0 .2rem 1.1rem;padding:0;font-size:.93rem}
+.sc-role li{margin:2px 0}
+.sc-role .who{font-weight:800;color:var(--accent)}
+
+.stepper{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.step{padding:5px 14px;border-radius:999px;border:2px solid var(--border);font-weight:700;font-size:.92rem;background:var(--surface-2);color:var(--muted)}
+.step.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.step.past{background:var(--done-bg);border-color:var(--done);color:var(--text)}
+
+.plan-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+.pb-list,.sb-list{list-style:none;margin:8px 0 0;padding:0 4px 0 0;display:flex;flex-direction:column;gap:8px}
+.pb-list{max-height:600px;overflow:auto}
+.story{background:var(--surface);border:1px solid var(--border);border-left:6px solid var(--todo);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow)}
+.story.urgent{border-left-color:var(--accent)}
+.st-main{display:flex;gap:10px;align-items:flex-start}
+.sz{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;border-radius:50%;background:var(--brand-bg);color:#fff;font-weight:800}
+.st-text{font-weight:600;overflow-wrap:anywhere}
+.st-meta{font-size:.82rem;color:var(--muted);font-weight:600}
+.val{color:var(--b-warn-tx);letter-spacing:1px}
+.st-actions{display:flex;flex-wrap:wrap;gap:6px}
+.btn.mini{min-height:34px;padding:4px 10px;font-size:.88rem;border-radius:8px}
+.tagr{display:inline-block;border-radius:6px;padding:1px 6px;font-size:.76rem;font-weight:800;margin-left:4px}
+.tagr.rework{background:var(--b-hot-bg);color:var(--b-hot-tx)}
+.tagr.urg{background:var(--b-warn-bg);color:var(--b-warn-tx)}
+.sum-line{font-weight:800;color:var(--brand);margin:8px 0}
+.sc-in{width:100%;min-height:44px;padding:8px 10px;border-radius:10px;border:2px solid var(--border);background:var(--surface);color:var(--text);font:inherit}
+.dod{margin:.3rem 0 .3rem 1.2rem;padding:0}
+.dod li{margin:3px 0}
+
+.sc-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.dev-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.dev-card{border:2px solid var(--border);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--surface)}
+.dev-card.ready{border-color:var(--done)}
+.dev-name{font-weight:800}
+.cd-bar{height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.cd-bar>i{display:block;height:100%;width:0;background:var(--done)}
+.dev-status{font-size:.88rem;color:var(--muted);font-weight:600}
+.sc-roll-area{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:12px}
+.pending-box{border:3px solid var(--accent);border-radius:12px;padding:12px;margin-bottom:12px;background:var(--warn-bg);color:var(--warn-text)}
+.apply-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.apply-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--text)}
+
+.sc-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sc-col{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
+.sc-col h3{margin:0;padding:9px 12px;color:#fff;font-size:1rem;display:flex;justify-content:space-between;gap:8px}
+.sc-col.c-todo h3{background:var(--todo)} .sc-col.c-doing h3{background:var(--doing)} .sc-col.c-done h3{background:var(--done)}
+.sc-col .body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:90px}
+.sc-col.c-todo .body{background:var(--todo-bg)} .sc-col.c-doing .body{background:var(--doing-bg)} .sc-col.c-done .body{background:var(--done-bg)}
+.sc-col .body:empty::after{content:"—";color:var(--muted)}
+.scard{background:var(--surface);border:1px solid var(--border);border-left:6px solid var(--c);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow)}
+.scard.c-todo{--c:var(--todo)} .scard.c-doing{--c:var(--doing)} .scard.c-done{--c:var(--done)}
+.scard .sctop{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pbar{height:9px;border-radius:99px;background:var(--surface-2);overflow:hidden;border:1px solid var(--border)}
+.pbar>i{display:block;height:100%;background:var(--doing)}
+.scard.c-done .pbar>i{background:var(--done)}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.wchip{background:var(--info-bg);border:1px solid var(--info-border);color:var(--info-text);border-radius:999px;padding:0 8px;font-size:.78rem;font-weight:700}
+
+.chart{width:100%;height:auto;max-width:520px;display:block}
+.ch-axis{stroke:var(--border);stroke-width:1}
+.ch-txt{fill:var(--muted);font-size:13px;font-family:inherit}
+.ch-val{fill:var(--text);font-size:13px;font-weight:700;font-family:inherit}
+.bd-ideal{stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4;fill:none}
+.bd-real{stroke:var(--accent);stroke-width:3;fill:none;stroke-linejoin:round}
+.bar-f{fill:var(--todo)} .bar-r{fill:var(--done)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.88rem;font-weight:600;margin-top:4px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.legend i.f{background:var(--todo)} .legend i.r{background:var(--done)} .legend i.bi{border-top:3px dashed var(--muted);height:0;width:18px;border-radius:0} .legend i.br{background:var(--accent);height:3px;width:18px;vertical-align:3px}
+.charts-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+
+.review-item{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--border);border-left:6px solid var(--done);border-radius:10px;padding:8px 10px;background:var(--surface);margin-top:8px}
+.review-item.ok{background:var(--ok-bg)} .review-item.no{background:var(--b-hot-bg);border-left-color:var(--accent)}
+.retro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-top:10px}
+.retro-col{border:2px solid var(--border);border-radius:12px;padding:10px;background:var(--surface)}
+.retro-col.start{border-color:var(--done)} .retro-col.stop{border-color:var(--accent)} .retro-col.cont{border-color:var(--todo)}
+.retro-col h3{margin:0 0 6px;font-size:1.02rem;color:var(--brand)}
+.retro-col ul{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.retro-col li{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;background:var(--surface-2);border-radius:8px;padding:6px 8px;font-size:.93rem;overflow-wrap:anywhere}
+.retro-add{display:flex;gap:6px}
+.retro-add input{flex:1;min-width:0}
+.sugg{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.sugg .btn{text-align:left}
+.insight-list{margin:.4rem 0 .4rem 1.2rem;padding:0}
+.insight-list li{margin:5px 0}
+@media (max-width:900px){
+  .plan-grid{grid-template-columns:1fr}
+  .sc-board{grid-template-columns:1fr}
+  .team-row{grid-template-columns:30px minmax(0,1fr)}
+  .team-row select{grid-column:1 / -1}
+}
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>🎲 Simulador de flujo Kanban–Scrum</h1>
+    <p class="sub">Juego de los dados · aprende Kanban (flujo de estaciones) y Scrum (equipo y sprints)</p>
+    <a id="volver" class="volver" href="index.html" target="_top">← Volver a la infografía</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <noscript><div class="card">Esta aplicación necesita JavaScript activado para funcionar.</div></noscript>
+
+  <!-- ============ SELECTOR DE MODO ============ -->
+  <section id="modeBox" class="card" aria-labelledby="modeTitle">
+    <h2 id="modeTitle">0 · Elige el modo de simulación</h2>
+    <div class="mode-cards">
+      <label class="mode-card sel" id="modeCardK">
+        <input type="radio" name="simMode" value="kanban" checked>
+        <span><strong>📋 Modo Kanban</strong><br><span class="muted small">Una línea de estaciones con flujo continuo: cada integrante es una fase del proceso. Aprendes WIP, flujo y cuellos de botella.</span></span>
+      </label>
+      <label class="mode-card" id="modeCardS">
+        <input type="radio" name="simMode" value="scrum">
+        <span><strong>🏉 Modo Scrum</strong><br><span class="muted small">Un equipo con Product Owner, Scrum Master y Desarrolladores trabaja por sprints: planeación, daily, revisión y retrospectiva.</span></span>
+      </label>
+    </div>
+  </section>
+
+  <!-- ============ CONFIGURACIÓN ============ -->
+  <section id="setup" class="card" aria-labelledby="setupTitle">
+    <h2 id="setupTitle">1 · Configura tu simulación</h2>
+    <div class="grid2">
+      <div class="field">
+        <label for="optDice">Dados por tirada</label>
+        <select id="optDice"></select>
+        <div class="hint">Cada punto del dado es una unidad de capacidad de trabajo.</div>
+      </div>
+      <div class="field">
+        <label for="optStations">Estaciones de trabajo (nodos) en la línea</label>
+        <select id="optStations"></select>
+        <div class="hint">Todo el equipo debe elegir el mismo número.</div>
+      </div>
+      <div class="field">
+        <label for="optMe">¿Cuál estación eres tú?</label>
+        <select id="optMe"></select>
+        <div class="hint">Cada integrante usa su propia pantalla con su propio número.</div>
+      </div>
+      <div class="field">
+        <label for="optTime">Duración de la simulación (cronómetro)</label>
+        <select id="optTime">
+          <option value="5">5 minutos</option>
+          <option value="10" selected>10 minutos</option>
+          <option value="15">15 minutos</option>
+        </select>
+        <div class="hint">Empieza a contar al pulsar «Iniciar». Al llegar a 00:00 la app se detiene.</div>
+      </div>
+      <div class="field" id="genField">
+        <label for="optGen">Cómo se genera el trabajo (solo estación 1)</label>
+        <select id="optGen">
+          <option value="continuo">Flujo continuo</option>
+          <option value="once">Un solo backlog</option>
+        </select>
+        <div class="hint">Continuo: se genera trabajo nuevo cada vez que «Por Hacer» queda vacío. Un solo backlog: solo la primera tirada genera tareas.</div>
+      </div>
+      <div class="field">
+        <label for="optName">Tu nombre o equipo (opcional)</label>
+        <input id="optName" type="text" maxlength="40" autocomplete="off">
+      </div>
+    </div>
+    <div class="field">
+      <strong>Así queda tu línea de trabajo:</strong>
+      <div id="pipePreview" aria-live="polite"></div>
+    </div>
+    <div class="field" style="margin-top:12px">
+      <strong>Tu rol en esa estación:</strong>
+      <div id="rolePreview" class="role-box role-body" aria-live="polite"></div>
+    </div>
+    <p style="margin:16px 0 0"><button class="btn primary big" id="startBtn" type="button" data-act="start">▶ Iniciar simulación</button></p>
+  </section>
+
+  <!-- ============ SIMULACIÓN ============ -->
+  <section id="play" hidden aria-label="Simulación en curso" style="display:flex;flex-direction:column;gap:16px">
+    <div id="timerBar" class="timerbar" role="timer" aria-label="Cronómetro de la simulación">
+      <div class="tb-main">
+        <span aria-hidden="true">⏱</span>
+        <span id="timerText" class="tb-time">10:00</span>
+        <span id="timerState" class="tb-state">Tiempo restante</span>
+      </div>
+      <div class="tb-prog" aria-hidden="true"><div id="timerFill" class="tb-fill"></div></div>
+    </div>
+    <div id="srStatus" class="sr-only" aria-live="polite"></div>
+
+    <div class="card summary" id="summary"></div>
+
+    <div class="card" id="pipeCard">
+      <strong>Línea de trabajo</strong>
+      <div id="pipe"></div>
+    </div>
+
+    <details class="card" id="roleCard" open>
+      <summary id="roleSummary">Tu rol en la línea</summary>
+      <div id="roleBody" class="role-body"></div>
+    </details>
+
+    <div class="card roll-card" aria-label="Tirada de dados">
+      <div class="dice-area">
+        <div id="diceRow" class="dice-row"></div>
+        <div id="diceTotal" class="dice-total"></div>
+      </div>
+      <div class="roll-side">
+        <button class="btn accent big" id="rollBtn" type="button" data-act="roll" aria-describedby="nextStep">🎲 Tirar dados</button>
+        <p id="nextStep" class="next"></p>
+      </div>
+      <div id="banner" class="banner" hidden></div>
+    </div>
+
+    <div class="card" id="boardCard">
+      <h2>Tablero Kanban</h2>
+      <div class="kpi-row" id="boardKpi"></div>
+      <div class="toolbar" id="toolbar"></div>
+      <div class="board-scroll" role="region" aria-label="Tablero Kanban" tabindex="0">
+        <div class="board" id="board"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Indicadores de tu estación</h2>
+      <div class="stats" id="stats"></div>
+      <p class="muted small" style="margin:10px 0 0">Eficiencia = tareas procesadas ÷ capacidad máxima de las tiradas (6 por dado en cada tirada). Tiempo sobrante de una tirada = (resultado de los dados − tareas por hacer) ÷ resultado de los dados. Lead time = tiradas transcurridas desde que la tarea llegó a «Por Hacer» hasta que la terminaste.</p>
+    </div>
+
+    <details class="card" id="logBox">
+      <summary>Bitácora de tiradas</summary>
+      <div class="tbl-wrap"><table class="log" id="logTable"></table></div>
+      <p class="muted small" style="margin:10px 0 0">En la estación 1, la tirada que genera el backlog no se contabiliza: solo cuenta la tirada que procesa las tareas.</p>
+      <p style="margin:12px 0 0"><button class="btn ghost" type="button" data-act="copylog">📋 Copiar bitácora (para pegar en Google Sheets)</button></p>
+    </details>
+  </section>
+
+  <!-- ============ SCRUM · CONFIGURACIÓN ============ -->
+  <section id="scSetup" class="card" hidden aria-labelledby="scSetupTitle">
+    <h2 id="scSetupTitle">1 · Arma tu equipo Scrum</h2>
+    <div class="grid2">
+      <div class="field">
+        <label for="scSize">Integrantes del equipo</label>
+        <select id="scSize"></select>
+        <div class="hint">Incluye al Product Owner, al Scrum Master y a los Desarrolladores.</div>
+      </div>
+      <div class="field">
+        <label for="scDice">Dados por tirada de cada desarrollador</label>
+        <select id="scDice"></select>
+        <div class="hint">Cada punto del dado es un punto de trabajo que se aplica a una historia.</div>
+      </div>
+      <div class="field">
+        <label for="scMin">Duración de cada sprint (cronómetro)</label>
+        <select id="scMin">
+          <option value="5">5 minutos</option>
+          <option value="10" selected>10 minutos</option>
+          <option value="15">15 minutos</option>
+        </select>
+        <div class="hint" id="scMinHint"></div>
+      </div>
+      <div class="field">
+        <label for="scSprints">Número de sprints</label>
+        <select id="scSprints">
+          <option value="2" selected>2 sprints</option>
+          <option value="3">3 sprints</option>
+        </select>
+        <div class="hint">Con más de un sprint se puede comparar la velocidad y ver el efecto de la retrospectiva.</div>
+      </div>
+      <div class="field">
+        <label for="scWip">Límite de historias en proceso (WIP)</label>
+        <select id="scWip">
+          <option value="0" selected>Sin límite</option>
+          <option value="2">Máximo 2 al mismo tiempo</option>
+          <option value="3">Máximo 3 al mismo tiempo</option>
+          <option value="4">Máximo 4 al mismo tiempo</option>
+        </select>
+        <div class="hint">Scrum no lo exige, pero muchos equipos lo usan (viene de Kanban).</div>
+      </div>
+      <div class="field">
+        <label>Eventos durante el sprint</label>
+        <label class="chk"><input type="checkbox" id="scDaily" checked> Daily Scrum a la mitad del sprint</label>
+        <label class="chk"><input type="checkbox" id="scUrgent" checked> Cambio urgente del cliente</label>
+      </div>
+    </div>
+    <div class="field">
+      <strong>Integrantes y roles</strong>
+      <div id="scTeamRows" class="team-rows"></div>
+      <div id="scTeamSummary" class="hint" role="status"></div>
+      <div class="merr" id="scTeamErr" role="alert"></div>
+    </div>
+    <div class="field" style="margin-top:12px">
+      <strong>Los tres roles de un equipo Scrum</strong>
+      <div id="scRolesInfo" class="sc-roles"></div>
+    </div>
+    <p style="margin:16px 0 0"><button class="btn primary big" id="scStartBtn" type="button" data-act="sc-start">▶ Crear el Product Backlog y empezar</button></p>
+  </section>
+
+  <!-- ============ SCRUM · SIMULACIÓN ============ -->
+  <section id="scPlay" hidden aria-label="Simulación Scrum" style="display:flex;flex-direction:column;gap:16px">
+    <div id="scSrStatus" class="sr-only" aria-live="polite"></div>
+    <div id="scContent" style="display:flex;flex-direction:column;gap:16px"></div>
+  </section>
+
+  <!-- ============ AYUDA ============ -->
+  <details class="card help" id="help">
+    <summary>¿Cómo se juega? · Reglas y vocabulario Kanban–Scrum</summary>
+    <h3>Reglas</h3>
+    <ul>
+      <li><strong>Cronómetro:</strong> eliges 5, 10 o 15 minutos. Corre desde que pulsas «Iniciar» y, al llegar a 00:00, la app se detiene.</li>
+      <li><strong>Estación 1:</strong> la tirada que genera el backlog crea tantas tareas como puntos saque (un punto = una tarea) y <em>no se contabiliza</em> en la bitácora. La siguiente tirada sí cuenta: pasan a «En Proceso» tantas tareas como puntos saques. Si sacas más puntos que tareas por hacer, se muestra el % de tiempo sobrante.</li>
+      <li><strong>Tú</strong> mueves las tareas de «En Proceso» a «Terminado» (arrastrándolas o con el botón «Terminar»).</li>
+      <li>No puedes volver a tirar mientras tengas tareas sin terminar en «En Proceso».</li>
+      <li><strong>Estaciones 2 en adelante:</strong> pega en «Por Hacer» las tareas que te manda la estación anterior. Sin tareas por hacer no hay tirada.</li>
+      <li>Cuando termines tareas, usa «Copiar terminadas» y mándalas (chat, WhatsApp, Classroom) a la siguiente estación. La última estación las entrega al cliente.</li>
+    </ul>
+    <h3>Cómo se calculan los indicadores</h3>
+    <ul>
+      <li><strong>Eficiencia:</strong> tareas procesadas ÷ capacidad máxima de las tiradas. La capacidad máxima de cada tirada es 6 con un dado, 12 con dos dados, y así sucesivamente.</li>
+      <li><strong>Tiempo sobrante:</strong> (resultado de los dados − tareas por hacer) ÷ resultado de los dados. Solo aplica cuando sacas más que las tareas pendientes.</li>
+      <li><strong>Tiempo promedio de entrada a terminado:</strong> el promedio de tiempo real desde que una tarea entra a tu «Por Hacer» hasta que la mueves a «Terminado».</li>
+    </ul>
+    <h3>Vocabulario</h3>
+    <ul>
+      <li><strong>Backlog:</strong> lista de trabajo pendiente (tu «Por Hacer»).</li>
+      <li><strong>WIP (trabajo en proceso):</strong> lo que tienes en «En Proceso» en este momento.</li>
+      <li><strong>Capacidad:</strong> lo que alcanza a hacer tu estación en una tirada (lo que sale en los dados).</li>
+      <li><strong>Sistema de arrastre (pull):</strong> cada estación toma solo lo que puede procesar.</li>
+      <li><strong>Cuello de botella:</strong> la estación que recibe más de lo que puede procesar; su «Por Hacer» crece.</li>
+      <li><strong>Terminado (Definition of Done):</strong> una tarea cuenta solo cuando llega a «Terminado».</li>
+      <li><strong>Tirada:</strong> como una mini-iteración (sprint corto) de tu estación.</li>
+    </ul>
+  </details>
+  <details class="card help" id="scHelp" hidden>
+    <summary>¿Cómo se juega el modo Scrum? · Reglas y diferencias con Kanban</summary>
+    <h3>Cómo avanza el juego</h3>
+    <ul>
+      <li><strong>Equipo:</strong> eligen cuántos son y qué rol tiene cada quien: 1 Product Owner, 1 Scrum Master y el resto Desarrolladores. Todos usan una sola pantalla.</li>
+      <li><strong>Planeación:</strong> el Product Owner ordena el Product Backlog con ↑ ↓ (lo que más valor da, arriba). El equipo elige historias para el Sprint Backlog, escribe la meta del sprint y queda fijo su <em>pronóstico</em> en puntos.</li>
+      <li><strong>Sprint:</strong> corre el cronómetro. Los Desarrolladores toman historias («Tomar →») y, cuando su tiempo de trabajo termina, tiran los dados. Los puntos del dado se aplican a una historia: una historia de 8 puntos necesita 8 puntos de trabajo. Los puntos que sobran se desperdician.</li>
+      <li><strong>Daily Scrum:</strong> a mitad del sprint, 1 minuto, tres preguntas: qué hice, qué haré y qué me bloquea. La dirige el Scrum Master.</li>
+      <li><strong>Cambio urgente:</strong> llega una petición del cliente. El Product Owner y los Desarrolladores deciden si entra al sprint o espera al siguiente.</li>
+      <li><strong>Al terminar el tiempo:</strong> lo que no quedó terminado vuelve al Product Backlog y vale cero.</li>
+      <li><strong>Revisión:</strong> el Product Owner acepta o rechaza cada historia terminada según la «definición de terminado».</li>
+      <li><strong>Retrospectiva:</strong> el equipo anota qué empezar, qué parar y qué continuar, y elige <em>un</em> compromiso de mejora para el siguiente sprint.</li>
+    </ul>
+    <h3>Qué cambia respecto a Kanban</h3>
+    <ul>
+      <li><strong>Tiempo:</strong> Kanban fluye de manera continua; Scrum trabaja en sprints de tiempo fijo.</li>
+      <li><strong>Equipo:</strong> en Kanban cada persona era una fase; en Scrum el equipo completo trabaja junto en las mismas historias.</li>
+      <li><strong>Control:</strong> Kanban limita el trabajo en proceso (WIP); Scrum pronostica lo que cabe en el sprint y se compromete con una meta.</li>
+      <li><strong>Mejora:</strong> Kanban mejora en cualquier momento; Scrum tiene un evento fijo para eso: la Retrospectiva.</li>
+      <li><strong>Medida:</strong> Kanban mide lead time y rendimiento; Scrum mide la velocidad (puntos aceptados por sprint).</li>
+    </ul>
+    <h3>Vocabulario</h3>
+    <ul>
+      <li><strong>Product Backlog:</strong> lista ordenada de todo lo que el producto podría necesitar.</li>
+      <li><strong>Sprint Backlog:</strong> las historias que el equipo se comprometió a intentar en este sprint.</li>
+      <li><strong>Incremento:</strong> lo que quedó terminado y aceptado al final del sprint.</li>
+      <li><strong>Velocidad:</strong> puntos de historia aceptados en un sprint. Sirve para pronosticar el siguiente.</li>
+      <li><strong>Burndown:</strong> gráfica de cuánto trabajo falta durante el sprint.</li>
+      <li><strong>Definición de terminado:</strong> lista de condiciones que una historia debe cumplir para contar como terminada.</li>
+    </ul>
+  </details>
+</main>
+
+<footer class="wrap">Material didáctico · Aplica Metodologías Ágiles · CETIS 125<br>Creado por César Osvaldo Díaz Martínez · Submódulo de Metodologías Ágiles para el desarrollo de Software</footer>
+<div id="modalRoot"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ================== utilidades ================== */
+var $ = function(s, r){ return (r||document).querySelector(s); };
+function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function pad2(n){ return String(n).padStart(2,'0'); }
+function pad3(n){ return String(n).padStart(3,'0'); }
+function sum(a){ return a.reduce(function(x,y){ return x+y; },0); }
+function fmtMs(ms){ var s=Math.round(ms/1000), m=Math.floor(s/60); return m+':'+pad2(s%60); }
+var STORE_KEY = 'kanban-dados-v2';
+
+var PHASES = {
+  2:["Análisis y diseño","Desarrollo y pruebas"],
+  3:["Análisis de requisitos","Desarrollo","Pruebas"],
+  4:["Análisis de requisitos","Diseño","Desarrollo","Pruebas"],
+  5:["Análisis de requisitos","Diseño","Desarrollo","Pruebas","Despliegue"],
+  6:["Análisis de requisitos","Diseño","Desarrollo","Pruebas","Integración","Despliegue"],
+  7:["Análisis de requisitos","Diseño","Desarrollo","Pruebas","Integración","Despliegue","Revisión con el cliente"],
+  8:["Análisis de requisitos","Diseño","Desarrollo","Pruebas","Integración","Despliegue","Revisión con el cliente","Retroalimentación"]
+};
+
+/* ---------- roles por fase ---------- */
+var ROLES = {
+ "Análisis de requisitos":{
+   rol:"Analista de requisitos",
+   scrum:"En Scrum se parece al Product Owner (dueño del producto): la persona que sabe qué necesita el cliente.",
+   funcion:"Entender qué necesita el cliente y convertirlo en tareas claras para que el resto del equipo pueda trabajar.",
+   resp:["Escuchar al cliente y preguntar lo que no quede claro.","Escribir cada tarea con un enunciado corto y entendible (el backlog).","Decidir qué va primero y qué puede esperar.","Aclarar las dudas de las estaciones siguientes sin hacerlas esperar."],
+   imp:"Todo el trabajo del equipo nace de lo que tú generas. Si las tareas salen mal explicadas, los demás trabajan de más o construyen algo que nadie pidió (como le pasó al equipo Monolito)."},
+ "Diseño":{
+   rol:"Diseñador de la solución",
+   scrum:"En un equipo Scrum forma parte del Equipo de Desarrollo: define cómo se verá y cómo se organizará lo que se va a construir.",
+   funcion:"Decidir cómo se va a ver y cómo va a funcionar cada tarea antes de programarla.",
+   resp:["Convertir cada tarea en un boceto, una pantalla o un esquema sencillo.","Cuidar que sea fácil de usar y que cualquier persona lo entienda.","Mantener un estilo parecido entre todas las pantallas.","Entregar lo suficiente para que Desarrollo arranque, sin llenarlo de papeleo."],
+   imp:"Un buen diseño evita que Desarrollo y Pruebas repitan trabajo. Corregir un mal diseño cuando ya está programado cuesta mucho más."},
+ "Desarrollo":{
+   rol:"Desarrollador",
+   scrum:"En Scrum es el Equipo de Desarrollo: quienes construyen el producto.",
+   funcion:"Construir en código lo que se pidió y se diseñó, para que funcione de verdad.",
+   resp:["Programar tarea por tarea, empezando por las más importantes.","Pedir ayuda o trabajar en pareja cuando algo se atora.","Avisar pronto si una tarea no va a salir a tiempo.","Dejar el código ordenado para que se pueda probar."],
+   imp:"Aquí el trabajo se vuelve software real. En la vida real es donde más trabajo suele acumularse, así que su ritmo marca el ritmo de todo el equipo."},
+ "Pruebas":{
+   rol:"Probador (control de calidad)",
+   scrum:"Ayuda a cumplir la «definición de terminado» de Scrum: una tarea solo está lista si funciona como se pidió.",
+   funcion:"Comprobar que cada tarea funciona como se pidió antes de que llegue al cliente.",
+   resp:["Probar cada tarea contra lo que se pidió.","Reportar los errores con claridad: qué hiciste, qué esperabas y qué pasó.","Regresar a Desarrollo lo que falle, sin culpar a nadie.","Dar el visto bueno solo a lo que de verdad funciona."],
+   imp:"Eres el filtro de calidad. Un error que se escapa cuesta mucho más cuando lo descubre el cliente que cuando lo encuentras tú."},
+ "Integración":{
+   rol:"Integrador de partes",
+   scrum:"Mantiene el «incremento» de Scrum: una versión del producto que siempre funciona al juntar el trabajo de todos.",
+   funcion:"Juntar las partes que hizo cada persona para que funcionen como una sola aplicación.",
+   resp:["Unir el trabajo que ya aprobó Pruebas.","Revisar que al juntar las partes no se rompa nada.","Resolver los choques entre partes hechas por distintas personas.","Mantener siempre lista una versión estable."],
+   imp:"Cada parte puede funcionar sola y fallar al juntarla. Si se integra poco a poco, los problemas se descubren temprano y no todos juntos al final."},
+ "Despliegue":{
+   rol:"Responsable de lanzamiento",
+   scrum:"Hace posible entregar el incremento terminado, que es el objetivo de cada sprint.",
+   funcion:"Poner la aplicación en el lugar donde el cliente ya pueda usarla.",
+   resp:["Publicar la versión aprobada.","Comprobar que funciona en el lugar real, no solo en tu computadora.","Tener un plan para regresar a la versión anterior si algo sale mal.","Avisar al cliente que ya está disponible."],
+   imp:"Un producto que no se publica no le sirve a nadie. Entregar software funcionando es el corazón de la forma ágil de trabajar."},
+ "Revisión con el cliente":{
+   rol:"Enlace con el cliente",
+   scrum:"Es como la Revisión del Sprint (Sprint Review): se muestra lo hecho y se recibe la opinión del cliente.",
+   funcion:"Mostrar al cliente lo que ya funciona y recoger su opinión.",
+   resp:["Presentar el avance funcionando con una demostración corta.","Escuchar y anotar qué quiere cambiar el cliente.","Confirmar si lo entregado es lo que el cliente necesitaba.","Llevar esos cambios de regreso al inicio de la línea."],
+   imp:"Evita construir cosas que nadie necesita. Aquí se cumple el valor ágil de colaborar con el cliente."},
+ "Retroalimentación":{
+   rol:"Facilitador de la mejora",
+   scrum:"Se parece al Scrum Master y a la Retrospectiva: ayuda al equipo a aprender y mejorar.",
+   funcion:"Ayudar al equipo a aprender de lo que pasó para trabajar mejor la próxima vez.",
+   resp:["Preguntar qué funcionó, qué no y qué se puede mejorar.","Detectar dónde se acumula el trabajo (cuellos de botella).","Proponer una mejora concreta y darle seguimiento.","Cuidar que todos puedan opinar."],
+   imp:"Sin mejora continua el equipo repite los mismos errores. Gracias a esta estación cada ronda sale mejor que la anterior."},
+ "Análisis y diseño":{
+   rol:"Analista y diseñador",
+   scrum:"Junta el papel del Product Owner (qué se necesita) con el de diseño (cómo se verá).",
+   funcion:"Entender lo que pide el cliente, convertirlo en tareas claras y decidir cómo se van a ver y a funcionar.",
+   resp:["Escuchar al cliente y escribir las tareas con enunciados claros (el backlog).","Decidir qué va primero y qué puede esperar.","Hacer bocetos sencillos de cómo se verá cada tarea.","Aclarar las dudas de la estación siguiente sin hacerla esperar."],
+   imp:"Como eres la primera estación, todo lo que sale mal de aquí se arrastra hasta el final: tareas claras y bien pensadas le ahorran trabajo a todos."},
+ "Desarrollo y pruebas":{
+   rol:"Desarrollador y probador",
+   scrum:"Es el Equipo de Desarrollo completo: construye y comprueba que funciona.",
+   funcion:"Construir cada tarea y comprobar que funciona antes de entregarla al cliente.",
+   resp:["Programar tarea por tarea, empezando por las más importantes.","Probar lo que programaste contra lo que se pidió.","Corregir los errores antes de entregar.","Entregar solo lo que de verdad funciona."],
+   imp:"Eres la última estación: lo que termines es lo que recibe el cliente. Construir bien y revisar lo que haces es tu mayor responsabilidad."}
+};
+function roleOf(n, me){ var ph=PHASES[n][me-1]; return ROLES[ph] || { rol:ph, scrum:'', funcion:'', resp:[], imp:'' }; }
+function gameDuties(n, me){
+  var d=[];
+  if(me===1) d.push('Tu primera tirada genera el backlog (las tareas que entran a la línea). Esa tirada no se contabiliza en la bitácora.');
+  else d.push('Esperas las tareas de la estación '+(me-1)+' ('+PHASES[n][me-2]+') y las pegas en «Por Hacer» con el botón 📥.');
+  d.push('Cada tirada es tu capacidad: pasan a «En Proceso» tantas tareas como puntos saques.');
+  d.push('Mueves tú mismo cada tarea de «En Proceso» a «Terminado»; sin eso no puedes volver a tirar.');
+  if(me<n) d.push('Copias lo terminado con el botón 📤 y se lo mandas a la estación '+(me+1)+' ('+PHASES[n][me]+').');
+  else d.push('Lo que termines se entrega al cliente: eres la última estación de la línea.');
+  d.push('Vigilas tu «Por Hacer»: si crece, tu estación es un cuello de botella; si se vacía, estás esperando trabajo. Avísale al equipo.');
+  return d;
+}
+function roleHTML(n, me, full){
+  var R=roleOf(n,me), ph=PHASES[n][me-1];
+  var h='<div class="role-head"><span class="role-badge">Estación '+me+' de '+n+'</span><span class="role-name">'+esc(R.rol)+'</span></div>';
+  h+='<p class="role-sc">Fase: '+esc(ph)+(R.scrum?' · '+esc(R.scrum):'')+'</p>';
+  h+='<h3>Función</h3><p>'+esc(R.funcion)+'</p>';
+  if(full){
+    h+='<h3>Tus responsabilidades</h3><ul>'+R.resp.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul>';
+    h+='<h3>En esta simulación</h3><ul>'+gameDuties(n,me).map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul>';
+  }
+  h+='<div class="role-imp"><strong>Por qué es importante:</strong> '+esc(R.imp)+'</div>';
+  if(full){
+    h+='<details class="role-all"><summary>Ver el rol de todas las estaciones</summary><ul>';
+    for(var i=1;i<=n;i++){ var r=roleOf(n,i); h+='<li><strong>Estación '+i+' · '+esc(r.rol)+':</strong> '+esc(r.funcion)+'</li>'; }
+    h+='</ul></details>';
+  }
+  return h;
+}
+
+var BANK = [
+ "Mostrar el menú del día","Apartar un platillo con un botón","Pedir usando el número de casillero","Ver el total del pedido",
+ "Cancelar un pedido","Marcar un platillo como agotado","Avisar cuando el pedido está listo","Ver los pedidos pendientes en la cocina",
+ "Agregar un platillo nuevo al menú","Editar el precio de un platillo","Filtrar el menú por categoría","Mostrar solo jugos naturales y agua",
+ "Reporte de ventas del día","Iniciar sesión del encargado","Cerrar sesión del encargado","Pagar al recoger el pedido",
+ "Guardar los platillos favoritos","Repetir el último pedido","Mostrar la hora estimada de entrega","Limitar los pedidos por receso",
+ "Buscar platillos por nombre","Agregar una foto a cada platillo","Mostrar los ingredientes de un platillo","Avisar si un platillo contiene alérgenos",
+ "Calificar un platillo con estrellas","Dejar un comentario sobre el servicio","Mostrar promociones del día","Aplicar un cupón de descuento",
+ "Ver el historial de pedidos","Imprimir el ticket del pedido","Registrar el corte de caja","Respaldar los pedidos del día",
+ "Cambiar la contraseña del encargado","Mostrar el menú en celular y en computadora","Hacer la app accesible con teclado","Validar que el casillero exista",
+ "Evitar pedidos duplicados por error","Mostrar un mensaje cuando no haya conexión","Ordenar el menú por precio","Mostrar los platillos más pedidos",
+ "Programar el menú de la semana","Notificar al encargado de un pedido nuevo","Mostrar la fila virtual de pedidos","Agrupar pedidos por salón",
+ "Marcar un pedido como entregado","Mostrar el saldo del monedero escolar","Recargar saldo del monedero","Generar el reporte semanal de ventas",
+ "Mostrar los horarios de la cafetería","Agregar combos de torta y jugo","Permitir pedir para otra persona","Mostrar el nombre del alumno en el pedido",
+ "Cambiar el idioma de la app","Agregar un modo oscuro","Probar la app en distintos navegadores","Documentar cómo usar la app",
+ "Capacitar al personal de la cafetería","Publicar la app en internet","Revisar la seguridad de los datos","Medir el tiempo promedio de entrega"
+];
+
+var PIPS = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+function dieHTML(v, cls){
+  cls = cls||'';
+  if(!v){ return '<span class="die '+cls+' empty" role="img" aria-label="Dado sin tirar">?</span>'; }
+  var p='';
+  for(var i=0;i<9;i++){ p += '<i'+(PIPS[v].indexOf(i)>-1?' class="on"':'')+'></i>'; }
+  return '<span class="die '+cls+'" role="img" aria-label="Dado con '+v+'">'+p+'</span>';
+}
+
+/* ================== estado ================== */
+var S = null;          // null = pantalla de configuración
+var banner = null;
+var rolling = false, rollTimer = null, rollInterval = null;
+var dragId = null;
+var tickHandle = null, ann60 = false, roleAutoClosed = false;
+var activeModal = null;
+
+function save(){
+  try{
+    if(S){ sessionStorage.setItem(STORE_KEY, JSON.stringify(S)); }
+    else { sessionStorage.removeItem(STORE_KEY); }
+  }catch(e){}
+}
+function load(){
+  try{
+    var raw = sessionStorage.getItem(STORE_KEY);
+    if(!raw) return null;
+    var o = JSON.parse(raw);
+    if(o && o.v===2 && o.cfg && Array.isArray(o.rolls) && Array.isArray(o.tasks) && Array.isArray(o.gens)) return o;
+  }catch(e){}
+  return null;
+}
+function shuffle(n){
+  var a=[], i, j, t;
+  for(i=0;i<n;i++) a.push(i);
+  for(i=n-1;i>0;i--){ j=Math.floor(Math.random()*(i+1)); t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+function phaseName(i){ var N=S?S.cfg.stations:currentN(); return (PHASES[N]||[])[i-1]||('Estación '+i); }
+function cnt(col){ return S.tasks.filter(function(t){ return t.col===col; }).length; }
+function say(msg){ var el=$('#srStatus'); if(el){ el.textContent=''; setTimeout(function(){ el.textContent=msg; },30); } }
+
+/* ================== configuración ================== */
+var optDice=$('#optDice'), optStations=$('#optStations'), optMe=$('#optMe'), optGen=$('#optGen'), optName=$('#optName'), optTime=$('#optTime');
+function currentN(){ return parseInt(optStations.value,10)||4; }
+
+function initSetup(){
+  var i, o;
+  for(i=1;i<=6;i++){ o=document.createElement('option'); o.value=i; o.textContent=i+(i===1?' dado':' dados'); optDice.appendChild(o); }
+  for(i=2;i<=8;i++){ o=document.createElement('option'); o.value=i; o.textContent=i+' estaciones'; optStations.appendChild(o); }
+  optDice.value='1'; optStations.value='4';
+  fillMe(1);
+  updateSetup();
+}
+function fillMe(keep){
+  var n=currentN(), prev=keep||parseInt(optMe.value,10)||1, i, o;
+  optMe.innerHTML='';
+  for(i=1;i<=n;i++){ o=document.createElement('option'); o.value=i; o.textContent='Estación '+i+' — '+PHASES[n][i-1]; optMe.appendChild(o); }
+  optMe.value=String(Math.min(prev,n));
+}
+function pipeHTML(n, me){
+  var h='<ol class="pipe">', i;
+  for(i=1;i<=n;i++){
+    h+='<li class="node'+(i===me?' me':'')+'"'+(i===me?' aria-current="step"':'')+'><span class="num">'+i+'</span><span class="nm">'+esc(PHASES[n][i-1])+'</span>'+(i===me?'<span class="you">Tú</span>':'')+'</li>';
+    if(i<n) h+='<li class="arrow" aria-hidden="true">→</li>';
+  }
+  return h+'</ol>';
+}
+function updateSetup(){
+  var n=currentN(), me=parseInt(optMe.value,10)||1;
+  $('#genField').hidden = (me!==1);
+  $('#pipePreview').innerHTML = pipeHTML(n, me);
+  $('#rolePreview').innerHTML = roleHTML(n, me, false);
+}
+optStations.addEventListener('change', function(){ fillMe(); updateSetup(); });
+optMe.addEventListener('change', updateSetup);
+
+function startSim(){
+  var cfg = {
+    dice: parseInt(optDice.value,10)||1,
+    stations: parseInt(optStations.value,10)||4,
+    me: parseInt(optMe.value,10)||1,
+    gen: optGen.value==='once'?'once':'continuo',
+    name: (optName.value||'').trim().slice(0,40),
+    minutes: [5,10,15].indexOf(parseInt(optTime.value,10))>-1 ? parseInt(optTime.value,10) : 10
+  };
+  if(cfg.me>cfg.stations) cfg.me=cfg.stations;
+  var now=Date.now();
+  S = { v:2, cfg:cfg, rolls:[], gens:[], tasks:[], seq:0, bank:shuffle(BANK.length), bankPos:0, round:1, genCount:0, autoCount:0,
+        newestFirst:true, lastDice:null, lastKind:null, startAt:now, endAt:now+cfg.minutes*60000, finished:false, endedAt:null };
+  banner = { kind:'info', icon:'⏱', title:'¡El cronómetro ya está corriendo ('+cfg.minutes+' min)!',
+    items:[ cfg.me===1 ? 'Eres la estación 1: tu primera tirada genera el backlog (no se contabiliza en la bitácora).' : 'Eres la estación '+cfg.me+': primero pega en «Por Hacer» las tareas que te manda la estación '+(cfg.me-1)+'.' ] };
+  ann60=false; roleAutoClosed=false; $('#roleCard').open=true;
+  save(); render(); startTicker();
+  window.scrollTo(0,0);
+}
+
+/* ================== cronómetro ================== */
+function startTicker(){ stopTicker(); tickHandle=setInterval(tick,250); tick(); }
+function stopTicker(){ if(tickHandle){ clearInterval(tickHandle); tickHandle=null; } }
+function tick(){
+  if(!S) return;
+  if(S.finished){ stopTicker(); return; }
+  var rem=S.endAt-Date.now();
+  if(rem<=0){ endSim(); return; }
+  updateTimerUI(rem);
+}
+function updateTimerUI(rem){
+  var total=S.cfg.minutes*60000;
+  var secs=Math.max(0,Math.ceil(rem/1000));
+  var bar=$('#timerBar');
+  $('#timerText').textContent=pad2(Math.floor(secs/60))+':'+pad2(secs%60);
+  $('#timerFill').style.width=Math.min(100,Math.max(0,(total-rem)/total*100))+'%';
+  bar.classList.toggle('done', !!S.finished);
+  bar.classList.toggle('danger', !S.finished && secs<=30);
+  bar.classList.toggle('warn', !S.finished && secs>30 && secs<=60);
+  $('#timerState').textContent = S.finished ? '⏹ Tiempo terminado' : (secs<=30 ? '¡Últimos segundos!' : (secs<=60 ? 'Queda menos de un minuto' : 'Tiempo restante'));
+  if(!S.finished && secs<=60 && !ann60){ ann60=true; say('Queda un minuto.'); }
+}
+function endSim(){
+  if(!S || S.finished) return;
+  S.finished=true; S.endedAt=Date.now();
+  clearTimeout(rollTimer); clearInterval(rollInterval); rolling=false;
+  stopTicker();
+  var m=computeMetrics();
+  banner={ kind:'info', icon:'⏹', title:'¡Tiempo terminado! La simulación se detuvo.', items:[
+    'Tiradas realizadas: '+S.rolls.length+' · Tareas terminadas: '+m.done+' · Eficiencia: '+(m.eff===null?'—':m.eff+'%'),
+    'Tiempo promedio de entrada a terminado: '+(m.avgMs===null?'—':fmtMs(m.avgMs)),
+    'Revisa tus indicadores y la bitácora, copia la bitácora para tu equipo o reinicia.' ] };
+  if(activeModal && activeModal.gameAction) activeModal.close();
+  say('Tiempo terminado. La simulación se detuvo.');
+  save(); render();
+  var lb=$('#logBox'); if(lb) lb.open=true;
+}
+
+/* ================== reglas del juego ================== */
+function blockers(){
+  var items=[], me=S.cfg.me, doing=cnt('enproceso'), todo=cnt('porhacer');
+  if(doing>0){
+    var r=S.rolls[S.rolls.length-1];
+    items.push('Mueve a «Terminado» las '+doing+' tarea(s) que siguen en «En Proceso» (tirada #'+(r?r.n:'?')+'). Arrástralas o usa el botón «Terminar».');
+  }
+  if(me>1 && todo===0){
+    items.push('Pega en «Por Hacer» las tareas que te envía la estación '+(me-1)+' ('+phaseName(me-1)+') con el botón «📥 Pegar tareas recibidas».');
+  }
+  if(me===1 && S.cfg.gen==='once' && S.gens.length>0 && todo===0 && doing===0){
+    items.push('Ya completaste todo el backlog inicial. Para jugar de nuevo, reinicia la simulación.');
+  }
+  return items;
+}
+function genTasks(n, rowN){
+  var now=Date.now();
+  for(var i=0;i<n;i++){
+    if(S.bankPos>=S.bank.length){ S.bankPos=0; S.round=(S.round||1)+1; S.bank=shuffle(BANK.length); }
+    var base=BANK[S.bank[S.bankPos++]];
+    var text = S.round>1 ? base+' (versión '+S.round+')' : base;
+    S.genCount++;
+    S.tasks.push({ id:'T-'+pad3(S.genCount), text:text, col:'porhacer', originRow:rowN, procRow:null, doneRoll:null, sent:false, seq:++S.seq, enteredAt:now, doneAt:null });
+  }
+}
+function applyRoll(vals){
+  var total=sum(vals);
+  var todo=S.tasks.filter(function(t){ return t.col==='porhacer'; }).sort(function(a,b){ return a.seq-b.seq; });
+  S.lastDice=vals;
+  var diceTxt = vals.length>1 ? ' ('+vals.join(' + ')+')' : '';
+  if(S.cfg.me===1 && todo.length===0){
+    /* tirada de generación: crea el backlog, NO se contabiliza en la bitácora */
+    var forRow=S.rolls.length+1;
+    S.gens.push({ forRow:forRow, dice:vals, total:total });
+    genTasks(total, forRow);
+    S.lastKind='gen';
+    banner={ kind:'info', icon:'🆕', title:'Generación de backlog: sacaste '+total+diceTxt,
+      items:['Se generaron '+total+' tareas nuevas en «Por Hacer».',
+             'Esta tirada solo genera el trabajo y no se contabiliza en la bitácora. Tu siguiente tirada será la Tirada #'+forRow+' y esa sí cuenta.'] };
+    return;
+  }
+  var n=S.rolls.length+1, max=6*S.cfg.dice;
+  var take=Math.min(total, todo.length), now=Date.now();
+  for(var i=0;i<take;i++){ todo[i].col='enproceso'; todo[i].procRow=n; }
+  var spare=Math.max(0,total-todo.length);          // sobrante = dados − tareas pendientes
+  var roll={ n:n, dice:vals, total:total, max:max, avail:todo.length, amount:take,
+             spare:spare, sparePct:Math.round(100*spare/total), left:todo.length-take, eff:Math.round(100*take/max), at:now };
+  S.rolls.push(roll); S.lastKind='proc';
+  var items=[];
+  if(spare>0){
+    items.push('Solo había '+todo.length+' tarea(s) por hacer: ('+total+' − '+todo.length+') ÷ '+total+' = '+roll.sparePct+'% de tiempo sobrante.');
+  } else if(roll.left>0){
+    items.push('Usaste todo lo que sacaste ('+take+' tareas). Quedan '+roll.left+' en «Por Hacer»: la fila crece, posible cuello de botella.');
+  } else {
+    items.push('Usaste todo lo que sacaste ('+take+' tareas).');
+  }
+  items.push('Eficiencia de esta tirada: '+take+' de '+max+' posibles = '+roll.eff+'%.');
+  items.push('Ahora mueve las '+take+' tarea(s) de «En Proceso» a «Terminado».');
+  banner={ kind: spare>0?'warn':'ok', icon: spare>0?'⏱':'✅', title:'Tirada #'+n+': sacaste '+total+diceTxt, items:items };
+}
+function finishTask(id){
+  if(S.finished) return;
+  var t=S.tasks.filter(function(x){ return x.id===id; })[0];
+  if(!t || t.col!=='enproceso') return;
+  t.col='terminado'; t.doneRoll=S.rolls.length; t.doneAt=Date.now();
+  var left=cnt('enproceso');
+  if(left===0){
+    var me=S.cfg.me, N=S.cfg.stations, extra=[];
+    if(me<N) extra.push('Copia tus tareas terminadas con «📤» y mándalas a la estación '+(me+1)+'.');
+    else extra.push('Como eres la última estación, lo terminado se entrega al cliente.');
+    extra.push('Ya puedes tirar los dados de nuevo.');
+    banner={ kind:'ok', icon:'🎉', title:'¡Todo lo de la tirada está terminado!', items:extra };
+  }
+  save(); render();
+  var nb=document.querySelector('.btn-finish:not(:disabled)');
+  (nb||$('#rollBtn')).focus();
+}
+
+function onRoll(){
+  if(rolling || S.finished) return;
+  var need=blockers();
+  if(need.length){
+    banner={ kind:'warn', icon:'✋', title:'Todavía no puedes tirar los dados', items:need, alert:true };
+    renderBanner();
+    var b=$('#banner'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+    if(cnt('enproceso')>0) flash('.cell.doing:not(:empty)');
+    if(S.cfg.me>1 && cnt('porhacer')===0) flash('#btnPaste');
+    return;
+  }
+  rolling=true; $('#rollBtn').disabled=true;
+  var vals=[], i;
+  for(i=0;i<S.cfg.dice;i++) vals.push(1+Math.floor(Math.random()*6));
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var dur = reduce?0:700, area=$('.dice-area');
+  if(dur){
+    area.classList.add('rolling');
+    rollInterval=setInterval(function(){
+      var tmp=[]; for(var k=0;k<S.cfg.dice;k++) tmp.push(1+Math.floor(Math.random()*6));
+      paintDice(tmp);
+    },90);
+  }
+  rollTimer=setTimeout(function(){
+    clearInterval(rollInterval);
+    area.classList.remove('rolling');
+    if(!S || S.finished){ rolling=false; return; }
+    applyRoll(vals);
+    rolling=false;
+    save(); render();
+    $('#rollBtn').focus();
+  }, dur);
+}
+function flash(sel){
+  var els=document.querySelectorAll(sel);
+  Array.prototype.forEach.call(els,function(e){ e.classList.add('flash'); setTimeout(function(){ e.classList.remove('flash'); },1600); });
+}
+
+/* ================== pegar / enviar ================== */
+function parseTasks(text){
+  var lines=text.split(/\r?\n/).map(function(s){ return s.trim(); }).filter(Boolean).slice(0,100), out=[];
+  lines.forEach(function(raw){
+    var line=raw.replace(/^[-*•]\s+/,'').replace(/^\d+[.)]\s+/,'');
+    var m=line.match(/^([A-Z]\d{0,2}-\d{1,4})\s*(?:[·|:–—\t-]\s*|\s+)(.+)$/);
+    var id=null, tx=line;
+    if(m){ id=m[1]; tx=m[2]; }
+    tx=tx.trim().slice(0,140);
+    if(tx) out.push({ id:id, text:tx });
+  });
+  return out;
+}
+function addPasted(items){
+  var added=0, dup=0, have={}, now=Date.now();
+  S.tasks.forEach(function(t){ have[t.id]=true; });
+  items.forEach(function(it){
+    var id=it.id;
+    if(id){ if(have[id]){ dup++; return; } }
+    else { do{ S.autoCount++; id='R'+S.cfg.me+'-'+pad3(S.autoCount); }while(have[id]); }
+    have[id]=true;
+    S.tasks.push({ id:id, text:it.text, col:'porhacer', originRow:S.rolls.length+1, procRow:null, doneRoll:null, sent:false, seq:++S.seq, enteredAt:now, doneAt:null });
+    added++;
+  });
+  return { added:added, dup:dup };
+}
+
+function openModal(opt){
+  var root=$('#modalRoot'), prev=document.activeElement;
+  root.innerHTML='<div class="overlay"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle"><h2 id="mTitle"></h2><div class="mbody"></div><div class="mactions"></div></div></div>';
+  $('#mTitle',root).textContent=opt.title;
+  var body=$('.mbody',root); body.innerHTML=opt.html||'';
+  var act=$('.mactions',root);
+  var handle={ gameAction:!!opt.gameAction, close:close };
+  function close(){
+    root.innerHTML=''; document.removeEventListener('keydown',onKey);
+    if(activeModal===handle) activeModal=null;
+    if(opt.onClose) opt.onClose();
+    if(prev && document.body.contains(prev) && prev.focus) prev.focus(); else { var rb=$('#rollBtn'); if(rb && !$('#play').hidden) rb.focus(); }
+  }
+  function onKey(e){
+    if(e.key==='Escape'){ if(!opt.noEscape) close(); return; }
+    if(e.key==='Tab'){
+      var f=root.querySelectorAll('button,textarea,input,select,[href]'); if(!f.length) return;
+      var first=f[0], last=f[f.length-1];
+      if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+    }
+  }
+  document.addEventListener('keydown',onKey);
+  opt.buttons.forEach(function(b){
+    var el=document.createElement('button'); el.type='button'; el.className='btn '+(b.kind||''); el.textContent=b.label;
+    el.addEventListener('click',function(){ var r=b.onClick?b.onClick(root):undefined; if(r!==false) close(); });
+    act.appendChild(el);
+  });
+  var firstField=root.querySelector('textarea,input,button'); if(firstField) firstField.focus();
+  if(opt.onOpen) opt.onOpen(root);
+  activeModal=handle;
+  return handle;
+}
+
+function openPaste(){
+  if(S.finished) return;
+  var me=S.cfg.me;
+  openModal({
+    gameAction:true,
+    title:'Pegar tareas recibidas',
+    html:'<p>Pega aquí las tareas que te mandó la <strong>estación '+(me-1)+' ('+esc(phaseName(me-1))+')</strong>, una por renglón. También puedes escribir tareas a mano.</p><label for="pasteArea" class="small muted">Tareas recibidas</label><textarea id="pasteArea" placeholder="T-001 · Mostrar el menú del día&#10;T-002 · Ver el total del pedido"></textarea><div class="merr" id="mErr" role="alert"></div>',
+    buttons:[
+      { label:'Agregar a «Por Hacer»', kind:'primary', onClick:function(root){
+          if(S.finished) return true;
+          var items=parseTasks($('#pasteArea',root).value);
+          if(!items.length){ $('#mErr',root).textContent='No encontré tareas. Pega al menos un renglón con texto.'; return false; }
+          var r=addPasted(items);
+          if(!r.added){ $('#mErr',root).textContent='Esas tareas ya estaban en tu tablero ('+r.dup+' repetida(s)).'; return false; }
+          banner={ kind:'ok', icon:'📥', title:'Se agregaron '+r.added+' tarea(s) a «Por Hacer»', items:[ r.dup?('Se ignoraron '+r.dup+' repetida(s).'):'Ya puedes tirar los dados.' ] };
+          save(); render();
+        } },
+      { label:'Cancelar', kind:'ghost' }
+    ]
+  });
+}
+
+function sendText(includeSent){
+  return S.tasks.filter(function(t){ return t.col==='terminado' && (includeSent||!t.sent); })
+    .sort(function(a,b){ return a.seq-b.seq; })
+    .map(function(t){ return t.id+' · '+t.text; }).join('\n');
+}
+function copyText(text, ta){
+  return new Promise(function(resolve){
+    function fallback(){
+      try{ ta.focus(); ta.select(); resolve(!!document.execCommand('copy')); }catch(e){ resolve(false); }
+    }
+    try{
+      if(navigator.clipboard && window.isSecureContext){
+        navigator.clipboard.writeText(text).then(function(){ resolve(true); }, fallback);
+      } else fallback();
+    }catch(e){ fallback(); }
+  });
+}
+function markSent(includeSent){
+  S.tasks.forEach(function(t){ if(t.col==='terminado' && (includeSent||!t.sent)) t.sent=true; });
+}
+function openSend(){
+  if(S.finished) return;
+  var me=S.cfg.me;
+  var m=openModal({
+    gameAction:true,
+    title:'Enviar a la estación '+(me+1)+' ('+phaseName(me+1)+')',
+    html:'<p>Copia este texto y mándalo a tu compañero de la estación '+(me+1)+' (chat, WhatsApp, Classroom…). Él lo pegará en su «Por Hacer».</p><label class="chk"><input type="checkbox" id="inclSent"> Incluir también las ya enviadas</label><label for="sendArea" class="small muted">Tareas terminadas</label><textarea id="sendArea" readonly></textarea><div class="merr" id="mErr" role="alert"></div>',
+    onOpen:function(root){
+      var ta=$('#sendArea',root), chk=$('#inclSent',root);
+      function fill(){ ta.value=sendText(chk.checked); if(!ta.value) ta.placeholder='No hay tareas terminadas nuevas por enviar.'; }
+      chk.addEventListener('change',fill); fill();
+    },
+    buttons:[
+      { label:'Copiar y marcar como enviadas', kind:'primary', onClick:function(root){
+          var ta=$('#sendArea',root), inc=$('#inclSent',root).checked;
+          if(!ta.value){ $('#mErr',root).textContent='No hay tareas terminadas nuevas por enviar.'; return false; }
+          copyText(ta.value, ta).then(function(ok){
+            if(ok){
+              var n=ta.value.split('\n').length; markSent(inc);
+              banner={ kind:'ok', icon:'📤', title:'Copiaste '+n+' tarea(s) para la estación '+(me+1), items:['Pégalas en el chat con tu compañero. ¡Ya puedes seguir con tu siguiente tirada!'] };
+              save(); m.close(); render();
+            } else {
+              $('#mErr',root).textContent='No se pudo copiar automáticamente. El texto quedó seleccionado: presiona Ctrl+C (o mantén presionado en el celular) y luego pulsa «Ya lo copié a mano».';
+              ta.focus(); ta.select();
+            }
+          });
+          return false;
+        } },
+      { label:'Ya lo copié a mano', kind:'ghost', onClick:function(root){
+          var ta=$('#sendArea',root), inc=$('#inclSent',root).checked;
+          if(!ta.value) return true;
+          markSent(inc); save(); render();
+        } },
+      { label:'Cerrar', kind:'ghost' }
+    ]
+  });
+}
+function openReset(){
+  openModal({
+    title:'¿Reiniciar la simulación?',
+    html:'<p>Se borrarán el tablero, las tiradas, el cronómetro y los indicadores de tu estación. Volverás a la pantalla de configuración.</p>',
+    buttons:[
+      { label:'Sí, reiniciar', kind:'accent', onClick:function(){
+          clearTimeout(rollTimer); clearInterval(rollInterval); rolling=false; stopTicker(); roleAutoClosed=false;
+          $('#rollBtn').disabled=false;
+          S=null; banner=null; save(); render(); window.scrollTo(0,0);
+        } },
+      { label:'Cancelar', kind:'ghost' }
+    ]
+  });
+}
+function copyLog(){
+  var head=['Nombre','Estación','Fase','Tirada','Dados','Capacidad_max','Resultado','Tareas_por_hacer','Procesadas','Eficiencia_%','Sobrante_%'].join('\t');
+  var rows=S.rolls.map(function(r){
+    return [S.cfg.name||'', S.cfg.me, phaseName(S.cfg.me), r.n, r.dice.join('+'), r.max, r.total, r.avail, r.amount, r.eff, r.sparePct].join('\t');
+  });
+  var text=[head].concat(rows).join('\n');
+  var m=openModal({
+    title:'Bitácora lista para Google Sheets',
+    html:'<p>Copia y pega en una hoja de cálculo (cada columna caerá en su celda).</p><textarea id="logArea" readonly></textarea><div class="merr" id="mErr" role="alert"></div>',
+    onOpen:function(root){ $('#logArea',root).value=text; },
+    buttons:[
+      { label:'Copiar', kind:'primary', onClick:function(root){
+          var ta=$('#logArea',root);
+          copyText(text, ta).then(function(ok){
+            if(ok){ m.close(); banner={ kind:'ok', icon:'📋', title:'Bitácora copiada', items:['Pégala en Google Sheets con Ctrl+V.'] }; renderBanner(); }
+            else { $('#mErr',root).textContent='No se pudo copiar automáticamente: el texto quedó seleccionado, presiona Ctrl+C.'; ta.focus(); ta.select(); }
+          });
+          return false;
+        } },
+      { label:'Cerrar', kind:'ghost' }
+    ]
+  });
+}
+
+/* ================== render ================== */
+function paintDice(vals){
+  var h='', i;
+  if(vals && vals.length){ for(i=0;i<vals.length;i++) h+=dieHTML(vals[i]); }
+  else { for(i=0;i<S.cfg.dice;i++) h+=dieHTML(0); }
+  $('#diceRow').innerHTML=h;
+}
+function renderDiceTotal(){
+  var t=$('#diceTotal'), v=S.lastDice;
+  if(!v || !v.length){ t.textContent='Aún no has tirado.'; return; }
+  var tot=sum(v), expr = v.length>1 ? v.join(' + ')+' = '+tot : String(tot);
+  if(S.lastKind==='gen') t.textContent='Generación de backlog: '+expr+' tareas (no se contabiliza)';
+  else t.textContent='Tirada #'+S.rolls.length+': '+expr;
+}
+function renderBanner(){
+  var b=$('#banner');
+  if(!banner){ b.hidden=true; b.innerHTML=''; return; }
+  b.hidden=false;
+  b.className='banner '+banner.kind;
+  b.setAttribute('role', banner.kind==='warn' && banner.alert ? 'alert' : 'status');
+  b.innerHTML='<span class="bi" aria-hidden="true">'+(banner.icon||'ℹ️')+'</span><div><div class="bt">'+esc(banner.title)+'</div>'+
+    (banner.items.length>1 ? '<ul>'+banner.items.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul>' : (banner.items[0]?'<div>'+esc(banner.items[0])+'</div>':''))+'</div>';
+}
+function nextStepText(){
+  var me=S.cfg.me, N=S.cfg.stations, doing=cnt('enproceso'), todo=cnt('porhacer');
+  if(S.finished) return 'El tiempo terminó: revisa tus indicadores, copia la bitácora o reinicia.';
+  var unsent=S.tasks.filter(function(t){ return t.col==='terminado' && !t.sent; }).length;
+  if(doing>0) return 'Paso siguiente: mueve las '+doing+' tarea(s) de «En Proceso» a «Terminado».';
+  if(me<N && unsent>0) return 'Paso siguiente: copia tus '+unsent+' tarea(s) terminadas y envíalas a la estación '+(me+1)+' (botón 📤).';
+  if(me>1 && todo===0) return 'Paso siguiente: pega en «Por Hacer» las tareas que te manda la estación '+(me-1)+' (botón 📥).';
+  if(me===1 && S.cfg.gen==='once' && S.gens.length>0 && todo===0) return 'Completaste todo el backlog. Reinicia para jugar otra vez.';
+  if(me===1 && todo===0) return S.gens.length===0 ? 'Paso siguiente: tira los dados para generar el backlog inicial (esta tirada no se contabiliza).' : 'Paso siguiente: tira los dados. Como tu «Por Hacer» está vacío, se generará trabajo nuevo (esa tirada no se contabiliza).';
+  return 'Paso siguiente: tira los dados.';
+}
+function renderSummary(){
+  var me=S.cfg.me, N=S.cfg.stations;
+  $('#summary').innerHTML='<div><strong>Estación '+me+' de '+N+' · '+esc(phaseName(me))+'</strong>'+(S.cfg.name?' · '+esc(S.cfg.name):'')+
+    '<div class="muted small">'+S.cfg.dice+(S.cfg.dice===1?' dado':' dados')+' por tirada (capacidad máxima '+(6*S.cfg.dice)+') · Recibes de: '+(me>1?'estación '+(me-1)+' ('+esc(phaseName(me-1))+')':'nadie (tú generas el trabajo)')+
+    ' · Entregas a: '+(me<N?'estación '+(me+1)+' ('+esc(phaseName(me+1))+')':'el cliente')+'</div></div>'+
+    '<button class="btn ghost" type="button" data-act="reset">↺ Reiniciar</button>';
+}
+function renderRole(){
+  var R=roleOf(S.cfg.stations,S.cfg.me);
+  $('#roleSummary').textContent='🎭 Tu rol: '+R.rol+' · Estación '+S.cfg.me+' de '+S.cfg.stations;
+  $('#roleBody').innerHTML=roleHTML(S.cfg.stations,S.cfg.me,true);
+}
+function cardHTML(t){
+  var fin='', sent='', drag='', tm='', orig='';
+  if(t.col==='enproceso'){
+    fin='<button type="button" class="btn-finish" data-act="finish" data-id="'+esc(t.id)+'"'+(S.finished?' disabled':'')+' aria-label="Terminar la tarea '+esc(t.id)+': '+esc(t.text)+'">Terminar →</button>';
+    if(!S.finished) drag=' draggable="true"';
+  }
+  if(t.col==='terminado'){
+    if(t.sent) sent='<span class="sent">Enviada ✓</span>';
+    if(t.doneAt && t.enteredAt) tm='<span class="tm">⏱ '+fmtMs(t.doneAt-t.enteredAt)+' de entrada a terminado</span>';
+  }
+  if(t.col!=='porhacer' && t.originRow!==t.procRow) orig='<span class="orig"> · de la tirada '+t.originRow+'</span>';
+  return '<div class="tcard '+t.col+'"'+drag+' data-id="'+esc(t.id)+'"><span class="tid">'+esc(t.id)+orig+'</span><span class="ttext">'+esc(t.text)+'</span>'+fin+tm+sent+'</div>';
+}
+function tiradaCell(n){
+  var r=S.rolls[n-1];
+  var g=S.gens.filter(function(x){ return x.forRow===n; })[0];
+  var genHTML='';
+  if(g){
+    genHTML='<div class="tir-gen"><strong>🆕 Backlog generado</strong><div class="tir-dice">'+g.dice.map(function(v){ return dieHTML(v,'sm'); }).join('')+'<span class="tir-sum">= '+g.total+' tareas</span></div><span class="tir-note">Esta tirada no se contabiliza.</span></div>';
+  }
+  if(!r) return '<div class="tir-title">Tirada '+n+'</div><span class="badge wait">⏳ En espera de tirar</span>'+(g?'':'<div class="tir-note">Tareas recibidas que esperan la siguiente tirada.</div>')+genHTML;
+  var dice=r.dice.map(function(v){ return dieHTML(v,'sm'); }).join('');
+  var badge;
+  if(r.spare>0) badge='<span class="badge warn">⏱ '+r.sparePct+'% de tiempo sobrante</span><div class="tir-note">('+r.total+' − '+r.avail+') ÷ '+r.total+'</div>';
+  else if(r.left>0) badge='<span class="badge hot">🔥 Usaste todo · quedan '+r.left+' en Por Hacer</span>';
+  else badge='<span class="badge ok">✅ Usaste todo lo que sacaste</span>';
+  return '<div class="tir-title">Tirada '+n+'</div><div class="tir-dice">'+dice+'<span class="tir-sum">= '+r.total+'</span></div><div class="tag">⚙️ Procesar</div>'+badge+
+    '<div class="tir-note">Procesadas '+r.amount+' de '+r.max+' posibles · eficiencia '+r.eff+'%</div>'+genHTML;
+}
+function renderToolbar(){
+  var me=S.cfg.me, N=S.cfg.stations, h='', dis=S.finished?' disabled':'';
+  if(me>1) h+='<button class="btn ghost" type="button" id="btnPaste" data-act="paste"'+dis+'>📥 Pegar tareas recibidas (de la estación '+(me-1)+')</button>';
+  if(me<N){
+    var u=S.tasks.filter(function(t){ return t.col==='terminado' && !t.sent; }).length;
+    h+='<button class="btn ghost" type="button" id="btnSend" data-act="send"'+dis+'>📤 Copiar terminadas para la estación '+(me+1)+(u?' ('+u+')':'')+'</button>';
+  } else {
+    h+='<span class="chip">✅ Entregadas al cliente: '+cnt('terminado')+'</span>';
+  }
+  h+='<button class="btn ghost" type="button" data-act="order">↕ Orden: '+(S.newestFirst?'más reciente arriba':'más antigua arriba')+'</button>';
+  $('#toolbar').innerHTML=h;
+}
+function renderKpi(){
+  var m=computeMetrics();
+  $('#boardKpi').innerHTML='<div class="kpi"><span class="k-ico" aria-hidden="true">⏱</span><div><div class="k-v">'+(m.avgMs===null?'—':fmtMs(m.avgMs))+'</div>'+
+    '<div class="k-l">Tiempo promedio desde que entra una tarea hasta que se termina'+(m.done?' ('+m.done+' tarea'+(m.done===1?'':'s')+')':' · aún no hay tareas terminadas')+'</div></div></div>';
+}
+function renderBoard(){
+  var nR=S.rolls.length;
+  var pending=S.tasks.some(function(t){ return t.col==='porhacer' && t.originRow===nR+1; });
+  var total=nR+(pending?1:0);
+  var board=$('#board');
+  if(total===0){ board.innerHTML='<div class="empty-board">Aún no hay tiradas. '+(S.cfg.me===1?'Tira los dados para generar el backlog inicial.':'Pega las tareas que te manda la estación '+(S.cfg.me-1)+' y tira los dados.')+'</div>'; return; }
+  var h='<div class="bhead"><div class="h-tir">Tirada</div><div class="h-todo">Por Hacer <span class="cnt">'+cnt('porhacer')+'</span></div><div class="h-doing">En Proceso (WIP) <span class="cnt">'+cnt('enproceso')+'</span></div><div class="h-done">Terminado <span class="cnt">'+cnt('terminado')+'</span></div></div>';
+  var order=[], n;
+  for(n=1;n<=total;n++) order.push(n);
+  if(S.newestFirst) order.reverse();
+  order.forEach(function(n){
+    function cards(col, rowKey){
+      return S.tasks.filter(function(t){ return t.col===col && t[rowKey]===n; }).sort(function(a,b){ return a.seq-b.seq; }).map(cardHTML).join('');
+    }
+    h+='<div class="brow">'+
+      '<div class="cell tir" data-label="Tirada">'+tiradaCell(n)+'</div>'+
+      '<div class="cell todo" data-label="Por Hacer">'+cards('porhacer','originRow')+'</div>'+
+      '<div class="cell doing" data-label="En Proceso">'+cards('enproceso','procRow')+'</div>'+
+      '<div class="cell done" data-label="Terminado" data-drop="1">'+cards('terminado','procRow')+'</div>'+
+    '</div>';
+  });
+  board.innerHTML=h;
+}
+function computeMetrics(){
+  var cap=sum(S.rolls.map(function(r){ return r.max; })), used=sum(S.rolls.map(function(r){ return r.amount; }));
+  var done=S.tasks.filter(function(t){ return t.col==='terminado'; });
+  var lead=done.length ? sum(done.map(function(t){ return t.doneRoll-t.originRow+1; }))/done.length : null;
+  var timed=done.filter(function(t){ return t.doneAt && t.enteredAt; });
+  var avgMs=timed.length ? sum(timed.map(function(t){ return t.doneAt-t.enteredAt; }))/timed.length : null;
+  var spareAvg=S.rolls.length ? Math.round(sum(S.rolls.map(function(r){ return r.sparePct; }))/S.rolls.length) : null;
+  return { eff: cap?Math.round(100*used/cap):null, spareAvg:spareAvg, lead:lead, done:done.length, avgMs:avgMs };
+}
+function renderStats(){
+  var m=computeMetrics();
+  function st(v,l){ return '<div class="stat"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>'; }
+  $('#stats').innerHTML=
+    st(S.rolls.length,'Tiradas contabilizadas')+
+    st(m.eff===null?'—':m.eff+'%','Eficiencia (sobre capacidad máxima)')+
+    st(m.spareAvg===null?'—':m.spareAvg+'%','Tiempo sobrante promedio')+
+    st(cnt('enproceso'),'WIP actual (En Proceso)')+
+    st(cnt('porhacer'),'En espera (Por Hacer)')+
+    st(m.done,'Tareas terminadas')+
+    st(m.lead===null?'—':m.lead.toFixed(1)+' tiradas','Lead time promedio')+
+    st(m.avgMs===null?'—':fmtMs(m.avgMs),'Tiempo promedio de entrada a terminado');
+}
+function renderLog(){
+  var t=$('#logTable');
+  if(!S.rolls.length){ t.innerHTML='<tbody><tr><td class="muted">Todavía no hay tiradas contabilizadas.</td></tr></tbody>'; return; }
+  var h='<thead><tr><th>#</th><th>Dados</th><th>Resultado</th><th>Capacidad máx.</th><th>Por hacer</th><th>Procesadas</th><th>Eficiencia</th><th>Sobrante</th></tr></thead><tbody>';
+  S.rolls.forEach(function(r){
+    h+='<tr><td>'+r.n+'</td><td>'+r.dice.join(' + ')+'</td><td>'+r.total+'</td><td>'+r.max+'</td><td>'+r.avail+'</td><td>'+r.amount+'</td><td>'+r.eff+'%</td><td>'+r.sparePct+'%</td></tr>';
+  });
+  t.innerHTML=h+'</tbody>';
+}
+function renderRollButton(){
+  var b=$('#rollBtn');
+  if(S.finished){ b.disabled=true; b.textContent='⏹ Tiempo terminado'; }
+  else { b.textContent='🎲 Tirar dados'; if(!rolling) b.disabled=false; }
+}
+function kRender(){
+  var setup=$('#setup'), play=$('#play');
+  if(!S){
+    setup.hidden=(mode!=='kanban'); play.hidden=true;
+    updateSetup();
+    return;
+  }
+  setup.hidden=true; play.hidden=false;
+  renderSummary();
+  renderRole();
+  if(!roleAutoClosed && (S.rolls.length+S.gens.length)>0){ $('#roleCard').open=false; roleAutoClosed=true; }
+  $('#pipe').innerHTML=pipeHTML(S.cfg.stations, S.cfg.me);
+  paintDice(S.lastDice);
+  renderDiceTotal();
+  $('#nextStep').textContent=nextStepText();
+  renderRollButton();
+  renderBanner();
+  renderKpi();
+  renderToolbar();
+  renderBoard();
+  renderStats();
+  renderLog();
+  updateTimerUI(S.finished?0:Math.max(0,S.endAt-Date.now()));
+}
+
+/* ================== eventos ================== */
+document.addEventListener('click', function(e){
+  var b=e.target.closest('[data-act]'); if(!b || b.disabled) return;
+  var act=b.getAttribute('data-act');
+  if(act==='start') startSim();
+  else if(act==='roll') onRoll();
+  else if(act==='finish') finishTask(b.getAttribute('data-id'));
+  else if(act==='paste') openPaste();
+  else if(act==='send') openSend();
+  else if(act==='reset') openReset();
+  else if(act==='copylog') copyLog();
+  else if(act==='order'){ S.newestFirst=!S.newestFirst; save(); renderToolbar(); renderBoard(); }
+});
+document.addEventListener('dragstart', function(e){
+  var c=e.target.closest && e.target.closest('.tcard[draggable="true"]'); if(!c) return;
+  dragId=c.getAttribute('data-id'); c.classList.add('dragging');
+  try{ e.dataTransfer.setData('text/plain',dragId); e.dataTransfer.effectAllowed='move'; }catch(x){}
+});
+document.addEventListener('dragend', function(){
+  dragId=null;
+  Array.prototype.forEach.call(document.querySelectorAll('.dragging,.over'),function(n){ n.classList.remove('dragging','over'); });
+});
+document.addEventListener('dragover', function(e){
+  var c=e.target.closest && e.target.closest('.cell[data-drop]');
+  if(c && dragId){ e.preventDefault(); c.classList.add('over'); }
+});
+document.addEventListener('dragleave', function(e){
+  var c=e.target.closest && e.target.closest('.cell[data-drop]'); if(c) c.classList.remove('over');
+});
+document.addEventListener('drop', function(e){
+  var c=e.target.closest && e.target.closest('.cell[data-drop]');
+  if(c && dragId){ e.preventDefault(); var id=dragId; dragId=null; finishTask(id); }
+});
+
+
+/* =====================================================================
+   MODO SCRUM
+   ===================================================================== */
+var mode = 'kanban';
+var SC = null, SC_KEY = 'scrum-dados-v1';
+var scBanner = null, scRolling = false, scRollTimer = null, scRollInterval = null, scTickH = null;
+var scTeamDraft = null, scRowsN = 0, scAnn60 = false, scRolesOpen = true, scOpen = {}, scBurnAt = 0;
+var SC_ROLLS = 8, SC_PB = 30;
+
+var SC_DOD = [
+  'Se aplicaron todos los puntos de trabajo que pedía la historia.',
+  'Otro integrante del equipo revisó que funciona.',
+  'Cumple lo que el cliente pidió.'
+];
+var SC_URGENT = [
+  'El director pide que el menú del día se vea bien en el celular, hoy mismo.',
+  'Cambió el reglamento escolar: hay que quitar los refrescos del menú de inmediato.',
+  'El encargado quiere ver cuántos pedidos lleva en total, ahora mismo.',
+  'Piden aceptar el monedero escolar como forma de pago desde mañana.'
+];
+var SCRUM_ROLES = {
+  po:{ icon:'🎯', rol:'Product Owner (dueño del producto)',
+    funcion:'Representar al cliente y decidir qué es lo más valioso para construir primero.',
+    resp:['Ordenar el Product Backlog: lo que más valor da, arriba.',
+          'Explicar al equipo qué se necesita y por qué.',
+          'Proponer con el equipo la meta de cada sprint.',
+          'En la Revisión, aceptar solo lo que cumple la definición de terminado.',
+          'Decidir, junto con los Desarrolladores, qué hacer ante un cambio urgente.'],
+    app:['Ordenas el Product Backlog con los botones ↑ ↓ durante la planeación.',
+         'Aceptas o rechazas cada historia en la Revisión.',
+         'Decides con el equipo qué hacer ante el cambio urgente del cliente.'],
+    imp:'Sin alguien que ordene el trabajo, el equipo puede terminar muchas cosas que nadie necesitaba. El Product Owner protege el valor del producto.' },
+  sm:{ icon:'🧭', rol:'Scrum Master (facilitador del equipo)',
+    funcion:'Ayudar a que el equipo entienda y use bien Scrum, y quitar lo que lo frena.',
+    resp:['Cuidar que cada evento respete su tiempo.',
+          'Dirigir la Daily Scrum y la Retrospectiva.',
+          'Ayudar a quitar los impedimentos que detectan los Desarrolladores.',
+          'Cuidar que todos opinen y que se respeten los acuerdos.',
+          'No manda: sirve al equipo.'],
+    app:['Diriges la Daily Scrum a la mitad del sprint.',
+         'Facilitas la Retrospectiva y cuidas que el equipo elija un compromiso de mejora.',
+         'Vigilas el cronómetro y, si hay límite de WIP, que se respete.'],
+    imp:'Un equipo sin quien cuide el proceso se desorganiza: eventos eternos, bloqueos sin resolver y mejoras que nunca se aplican.' },
+  dev:{ icon:'💻', rol:'Desarrollador',
+    funcion:'Construir el incremento: hacer las historias del sprint de principio a fin.',
+    resp:['Pronosticar con el equipo cuánto trabajo cabe en el sprint.',
+          'Tomar historias y trabajarlas hasta dejarlas terminadas.',
+          'Ayudar a otros cuando una historia se atora (trabajo en equipo).',
+          'Avisar pronto de lo que los bloquea en la Daily.',
+          'Terminar lo que empiezan: lo que no se termina no vale.'],
+    app:['Pronosticas con el equipo qué historias caben en el sprint.',
+         'Tomas historias, tiras tus dados cuando termina tu tiempo de trabajo y eliges a qué historia aplicas los puntos.',
+         'Procuras terminar antes de empezar otra historia.'],
+    imp:'Son quienes convierten el backlog en producto. Su compromiso con terminar (no solo empezar) es lo que genera valor real en cada sprint.' }
+};
+
+/* ---------- persistencia ---------- */
+function scSave(){
+  try{ if(SC){ sessionStorage.setItem(SC_KEY, JSON.stringify(SC)); } else { sessionStorage.removeItem(SC_KEY); } }catch(e){}
+}
+function scLoad(){
+  try{
+    var raw=sessionStorage.getItem(SC_KEY); if(!raw) return null;
+    var o=JSON.parse(raw);
+    if(o && o.v===1 && o.cfg && Array.isArray(o.cfg.team) && Array.isArray(o.stories) && Array.isArray(o.sprints)) return o;
+  }catch(e){}
+  return null;
+}
+
+/* ---------- ayudas ---------- */
+function scSay(msg){ var el=$('#scSrStatus'); if(el){ el.textContent=''; setTimeout(function(){ el.textContent=msg; },30); } }
+function scCur(){ return SC.sprints[SC.sprintNo-1]; }
+function scMember(id){ return SC.cfg.team.filter(function(m){ return m.id===id; })[0]; }
+function scDevs(){ return SC.cfg.team.filter(function(m){ return m.role==='dev'; }); }
+function scByRole(r){ return SC.cfg.team.filter(function(m){ return m.role===r; }); }
+function poName(){ return SC ? esc(scByRole('po')[0].name) : ''; }
+function smName(){ return SC ? esc(scByRole('sm')[0].name) : ''; }
+function mName(id){ var m=scMember(id); return m ? m.name : '?'; }
+function byPrio(a,b){ return a.prio-b.prio; }
+function scStories(state){ return SC.stories.filter(function(s){ return s.state===state; }); }
+function scSprintBacklog(n){ return SC.stories.filter(function(s){ return s.sprint===n && (s.state==='sprint'||s.state==='doing'||s.state==='hecho'); }); }
+function scStory(id){ return SC.stories.filter(function(s){ return s.id===id; })[0]; }
+function scRemaining(){
+  var n=SC.sprintNo;
+  return sum(SC.stories.filter(function(s){ return s.sprint===n && (s.state==='sprint'||s.state==='doing'); }).map(function(s){ return s.size-s.progress; }));
+}
+function stars(v){ return v===3?'★★★':(v===2?'★★☆':'★☆☆'); }
+function valName(v){ return v===3?'alto':(v===2?'medio':'bajo'); }
+function valHTML(v){ return '<span class="val" role="img" aria-label="Valor '+valName(v)+'">'+stars(v)+'</span>'; }
+function szHTML(n){ return '<span class="sz" role="img" aria-label="'+n+' puntos">'+n+'</span>'; }
+function scNewSprint(n){
+  return { no:n, goal:'', forecast:0, scopeAdded:0, startAt:null, endAt:null, endedAt:null, ready:{}, rolls:[], burn:[],
+           dailyDone:false, urgentDone:false, urgent:null, unfinished:[], reviewItems:[], acceptedIds:[], rejectedIds:[],
+           review:{ goalMet:null, confirmed:false }, retro:{ start:[], stop:[], cont:[], commit:'' }, m:null };
+}
+function scMakeStories(){
+  var order=shuffle(BANK.length), out=[], i;
+  for(i=0;i<SC_PB;i++){
+    var r=Math.random();
+    var size = r<0.3 ? 3 : (r<0.6 ? 5 : (r<0.85 ? 8 : 13));
+    out.push({ id:'H-'+pad2(i+1), text:BANK[order[i]], size:size, value:1+Math.floor(Math.random()*3), prio:i+1,
+               state:'pb', sprint:0, progress:0, workers:{}, takenAt:null, doneAt:null, urgent:false, rej:0 });
+  }
+  return out;
+}
+function scBannerBlock(){
+  if(!scBanner) return '';
+  return '<div class="banner '+scBanner.kind+'" role="'+(scBanner.kind==='warn'&&scBanner.alert?'alert':'status')+'" style="margin:10px 0"><span class="bi" aria-hidden="true">'+(scBanner.icon||'ℹ️')+'</span><div><div class="bt">'+esc(scBanner.title)+'</div>'+
+    (scBanner.items.length>1 ? '<ul>'+scBanner.items.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul>' : (scBanner.items[0]?'<div>'+esc(scBanner.items[0])+'</div>':''))+'</div></div>';
+}
+function scFocusTitle(){ setTimeout(function(){ var t=$('#scPhaseTitle'); if(t) t.focus(); },30); }
+function scGoto(phase){
+  SC.phase=phase; scSave(); render(); window.scrollTo(0,0); scFocusTitle();
+}
+
+/* ================== configuración del equipo ================== */
+function scDefaultRole(i){ return i===0 ? 'po' : (i===1 ? 'sm' : 'dev'); }
+function scCountRoles(){ var c={po:0,sm:0,dev:0}; (scTeamDraft||[]).forEach(function(m){ c[m.role]++; }); return c; }
+function scInitSetup(){
+  var i, o, sz=$('#scSize'), dc=$('#scDice');
+  for(i=3;i<=8;i++){ o=document.createElement('option'); o.value=i; o.textContent=i+' integrantes'; sz.appendChild(o); }
+  sz.value='5';
+  for(i=1;i<=6;i++){ o=document.createElement('option'); o.value=i; o.textContent=i+(i===1?' dado':' dados'); dc.appendChild(o); }
+  dc.value='1';
+  $('#scRolesInfo').innerHTML=['po','sm','dev'].map(function(k){
+    var r=SCRUM_ROLES[k];
+    return '<div class="sc-role"><h3>'+r.icon+' '+esc(r.rol)+'</h3><p><strong>Función:</strong> '+esc(r.funcion)+'</p><p><strong>Por qué es importante:</strong> '+esc(r.imp)+'</p></div>';
+  }).join('');
+  scUpdateSetup(true);
+}
+function scRoleOptions(sel){
+  return [['po','Product Owner'],['sm','Scrum Master'],['dev','Desarrollador']].map(function(r){
+    return '<option value="'+r[0]+'"'+(r[0]===sel?' selected':'')+'>'+r[1]+'</option>';
+  }).join('');
+}
+function scBuildRows(){
+  var h='';
+  scTeamDraft.forEach(function(m,i){
+    h+='<div class="team-row"><span class="tr-n" aria-hidden="true">'+(i+1)+'</span>'+
+       '<input type="text" class="tr-name" data-i="'+i+'" maxlength="24" placeholder="Integrante '+(i+1)+'" aria-label="Nombre del integrante '+(i+1)+'" value="'+esc(m.name)+'" autocomplete="off">'+
+       '<select class="tr-role" data-i="'+i+'" aria-label="Rol del integrante '+(i+1)+'">'+scRoleOptions(m.role)+'</select></div>';
+  });
+  $('#scTeamRows').innerHTML=h;
+}
+function scTeamSummary(){
+  var c=scCountRoles(), el=$('#scTeamSummary'), ok=(c.po===1 && c.sm===1 && c.dev>=1);
+  el.className='hint '+(ok?'good':'bad');
+  el.textContent=(ok?'✔ ':'⚠ ')+'Equipo: '+c.po+' Product Owner · '+c.sm+' Scrum Master · '+c.dev+' Desarrollador'+(c.dev===1?'':'es')+
+    (ok?'':' — debe haber exactamente 1 Product Owner, 1 Scrum Master y al menos 1 Desarrollador.');
+  if(ok) $('#scTeamErr').textContent='';
+}
+function scUpdateSetup(force){
+  var n=parseInt($('#scSize').value,10)||5, i, d=scTeamDraft||[], nd=[];
+  for(i=0;i<n;i++) nd.push(d[i] || { name:'', role:scDefaultRole(i) });
+  scTeamDraft=nd;
+  if(force || scRowsN!==n){ scBuildRows(); scRowsN=n; }
+  scTeamSummary();
+  var mins=parseInt($('#scMin').value,10)||10;
+  $('#scMinHint').textContent='Cada desarrollador puede tirar cada ~'+Math.round(mins*60/SC_ROLLS)+' s (unas '+SC_ROLLS+' tiradas por sprint).';
+}
+function scStart(){
+  scUpdateSetup(false);
+  var c=scCountRoles();
+  if(!(c.po===1 && c.sm===1 && c.dev>=1)){
+    $('#scTeamErr').textContent='Ajusta los roles: debe haber exactamente 1 Product Owner, 1 Scrum Master y al menos 1 Desarrollador.';
+    var sel=$('#scTeamRows select'); if(sel) sel.focus();
+    return;
+  }
+  var team=scTeamDraft.map(function(m,i){ return { id:'m'+(i+1), name:(m.name||'').trim().slice(0,24) || ('Integrante '+(i+1)), role:m.role }; });
+  var mins=parseInt($('#scMin').value,10);
+  var cfg={ team:team, dice:parseInt($('#scDice').value,10)||1, minutes:[5,10,15].indexOf(mins)>-1?mins:10,
+            sprints:parseInt($('#scSprints').value,10)===3?3:2, daily:$('#scDaily').checked, urgent:$('#scUrgent').checked,
+            wip:parseInt($('#scWip').value,10)||0 };
+  SC={ v:1, cfg:cfg, phase:'planning', sprintNo:1, stories:scMakeStories(), sprints:[scNewSprint(1)], pending:null, lastRoll:null, seq:0 };
+  mode='scrum'; scRolesOpen=true;
+  scBanner={ kind:'info', icon:'👋', title:'¡Equipo listo!', items:[
+    'Se creó un Product Backlog con '+SC_PB+' historias. El Product Owner ('+scByRole('po')[0].name+') debe ordenarlo: lo que más valor da, arriba.',
+    'Después elijan qué historias caben en el Sprint 1 y escriban la meta.' ] };
+  scSave(); render(); window.scrollTo(0,0); scFocusTitle();
+}
+
+/* ================== planeación ================== */
+function scMovePB(id, dir){
+  var pb=scStories('pb').sort(byPrio), i, idx=-1;
+  for(i=0;i<pb.length;i++){ if(pb[i].id===id){ idx=i; break; } }
+  if(idx<0) return;
+  if(dir==='top'){ if(idx===0) return; pb[idx].prio=pb[0].prio-1; }
+  else {
+    var j=idx+dir; if(j<0||j>=pb.length) return;
+    var t=pb[idx].prio; pb[idx].prio=pb[j].prio; pb[j].prio=t;
+  }
+  scSave(); scRenderPlay();
+  var b=document.querySelector('.pb-list [data-id="'+id+'"]'); if(b) b.focus();
+}
+function scAddToSprint(id){
+  var s=scStory(id); if(!s||s.state!=='pb') return;
+  s.state='sprint'; s.sprint=SC.sprintNo; scBanner=null; scSave(); scRenderPlay();
+}
+function scRemoveFromSprint(id){
+  var s=scStory(id); if(!s||s.state!=='sprint') return;
+  s.state='pb'; s.sprint=0; scSave(); scRenderPlay();
+}
+function scPlanningHTML(){
+  var n=SC.sprintNo, sp=scCur();
+  var pb=scStories('pb').sort(byPrio), sb=scSprintBacklog(n).sort(byPrio);
+  var fc=sum(sb.map(function(s){ return s.size; }));
+  var prev=n>1 ? SC.sprints[n-2] : null, dev=scDevs().length, d=SC.cfg.dice;
+  var h='<div class="card"><h2 id="scPhaseTitle" tabindex="-1">📝 Planeación del Sprint '+n+'</h2>';
+  h+='<p class="muted">Participa todo el equipo. El Product Owner (<strong>'+poName()+'</strong>) ordena el Product Backlog y los Desarrolladores pronostican cuántas historias caben. Tiempo sugerido: 3 minutos.</p>';
+  if(prev && prev.m){
+    h+='<div class="role-box"><strong>Lo que aprendieron en el sprint anterior:</strong><ul class="dod">'+
+      '<li>Pronosticaron '+prev.m.forecast+' puntos y terminaron <strong>'+prev.m.velocity+'</strong> (esa es su velocidad).</li>'+
+      (prev.retro.commit ? '<li>Compromiso de mejora: «'+esc(prev.retro.commit)+'».</li>' : '')+
+      (prev.m.unfinishedN ? '<li>Quedaron '+prev.m.unfinishedN+' historia(s) sin terminar: volvieron al Product Backlog.</li>' : '')+
+      '</ul>Usen la velocidad anterior como guía para pronosticar (el «clima de ayer»).</div>';
+  } else {
+    h+='<details class="role-box" id="scHintDet"'+(scOpen.scHintDet?' open':'')+'><summary>Pista del Scrum Master: ¿cuánto pronosticar?</summary><p>Cada desarrollador tira unas '+SC_ROLLS+' veces por sprint y cada dado saca en promedio 3.5 puntos. Con '+dev+' desarrollador'+(dev===1?'':'es')+' y '+d+' dado'+(d===1?'':'s')+', el equipo puede esperar alrededor de <strong>'+Math.round(dev*SC_ROLLS*3.5*d)+' puntos</strong> (máximo posible: '+(dev*SC_ROLLS*6*d)+'). Pero los dados son inciertos y los puntos que sobran en una historia se desperdician: pronosticar justo al promedio suele ser arriesgado.</p></details>';
+  }
+  h+=scBannerBlock();
+  h+='<div class="plan-grid"><div><h3>📚 Product Backlog <span class="muted small">(arriba = más prioridad)</span></h3><ul class="pb-list" aria-label="Product Backlog">';
+  pb.forEach(function(s,i){
+    h+='<li class="story'+(s.urgent?' urgent':'')+'"><div class="st-main">'+szHTML(s.size)+'<div><div class="st-text">'+esc(s.text)+'</div><div class="st-meta"><span class="tid">'+esc(s.id)+'</span> · '+valHTML(s.value)+(s.rej?'<span class="tagr rework">Rehacer</span>':'')+(s.urgent?'<span class="tagr urg">Urgente</span>':'')+'</div></div></div>'+
+      '<div class="st-actions">'+
+      '<button type="button" class="btn mini ghost" data-act="sc-top" data-id="'+esc(s.id)+'" aria-label="Subir '+esc(s.id)+' al inicio"'+(i===0?' disabled':'')+'>⤒</button>'+
+      '<button type="button" class="btn mini ghost" data-act="sc-up" data-id="'+esc(s.id)+'" aria-label="Subir '+esc(s.id)+' una posición"'+(i===0?' disabled':'')+'>↑</button>'+
+      '<button type="button" class="btn mini ghost" data-act="sc-down" data-id="'+esc(s.id)+'" aria-label="Bajar '+esc(s.id)+' una posición"'+(i===pb.length-1?' disabled':'')+'>↓</button>'+
+      '<button type="button" class="btn mini primary" data-act="sc-add" data-id="'+esc(s.id)+'" aria-label="Agregar '+esc(s.id)+' al Sprint Backlog">Agregar al sprint →</button></div></li>';
+  });
+  if(!pb.length) h+='<li class="muted">El Product Backlog está vacío.</li>';
+  h+='</ul></div><div><h3>🎯 Sprint Backlog</h3><div class="sum-line" id="scForecast">Pronóstico: '+fc+' puntos · '+sb.length+' historia'+(sb.length===1?'':'s')+'</div>';
+  if(prev && prev.m){
+    var diff=fc-prev.m.velocity;
+    h+='<div class="hint">'+(fc===0?'Aún no eligen historias.':(diff>prev.m.velocity*0.3?'⚠ Pronostican bastante más que su velocidad anterior ('+prev.m.velocity+').':(diff<-prev.m.velocity*0.3?'Pronostican bastante menos que su velocidad anterior ('+prev.m.velocity+'): ¿pueden con más?':'Está cerca de su velocidad anterior ('+prev.m.velocity+').')))+'</div>';
+  }
+  h+='<ul class="sb-list" aria-label="Sprint Backlog">';
+  sb.forEach(function(s){
+    h+='<li class="story'+(s.urgent?' urgent':'')+'"><div class="st-main">'+szHTML(s.size)+'<div><div class="st-text">'+esc(s.text)+'</div><div class="st-meta"><span class="tid">'+esc(s.id)+'</span> · '+valHTML(s.value)+'</div></div></div>'+
+      '<div class="st-actions"><button type="button" class="btn mini ghost" data-act="sc-remove" data-id="'+esc(s.id)+'" aria-label="Quitar '+esc(s.id)+' del Sprint Backlog">← Quitar</button></div></li>';
+  });
+  if(!sb.length) h+='<li class="muted">Agreguen historias desde el Product Backlog.</li>';
+  h+='</ul><div class="field" style="margin-top:12px"><label for="scGoal">Meta del sprint (qué quieren lograr)</label>'+
+     '<input id="scGoal" class="sc-in" type="text" maxlength="120" placeholder="Ej.: Que los alumnos puedan ver el menú y apartar un platillo" value="'+esc(sp.goal||'')+'" autocomplete="off"></div>';
+  h+='<h3>Definición de terminado</h3><ul class="dod">'+SC_DOD.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul>';
+  h+='<p style="margin:14px 0 0"><button type="button" class="btn primary big" data-act="sc-startsprint">▶ Iniciar el Sprint '+n+' ('+SC.cfg.minutes+' min)</button></p></div></div></div>';
+  return h;
+}
+function scStartSprint(){
+  var sp=scCur(), n=SC.sprintNo, sb=scSprintBacklog(n), goal=(sp.goal||'').trim(), errs=[];
+  if(!sb.length) errs.push('Agreguen al menos una historia al Sprint Backlog.');
+  if(goal.length<5) errs.push('Escriban la meta del sprint: qué quieren lograr (al menos unas palabras).');
+  if(errs.length){
+    scBanner={ kind:'warn', icon:'✋', title:'Falta completar la planeación', items:errs, alert:true };
+    scRenderPlay(); return;
+  }
+  var now=Date.now(), dur=SC.cfg.minutes*60000;
+  sp.goal=goal; sp.forecast=sum(sb.map(function(s){ return s.size; }));
+  sp.startAt=now; sp.endAt=now+dur; sp.ready={}; sp.rolls=[]; sp.scopeAdded=0; sp.dailyDone=false; sp.urgentDone=false; sp.urgent=null;
+  scDevs().forEach(function(d){ sp.ready[d.id]=now; });
+  sp.burn=[{ t:0, rem:sp.forecast }];
+  SC.pending=null; SC.lastRoll=null; scAnn60=false; scRolesOpen=false;
+  scBanner={ kind:'info', icon:'⏱', title:'¡Comenzó el Sprint '+n+'!', items:[
+    'Los Desarrolladores toman historias con «Tomar →» y tiran los dados cuando termine su tiempo de trabajo.',
+    'Pronóstico: '+sp.forecast+' puntos. Lo que no quede terminado al llegar a 00:00 no vale.' ] };
+  SC.phase='sprint'; scSave(); render(); scStartTicker(); window.scrollTo(0,0); scFocusTitle();
+}
+
+/* ================== sprint ================== */
+function scTimerBarHTML(){
+  return '<div id="scTimerBar" class="timerbar" role="timer" aria-label="Cronómetro del sprint"><div class="tb-main"><span aria-hidden="true">⏱</span>'+
+    '<span id="scTimerText" class="tb-time">--:--</span><span id="scTimerState" class="tb-state">Tiempo del sprint '+SC.sprintNo+'</span></div>'+
+    '<div class="tb-prog" aria-hidden="true"><div id="scTimerFill" class="tb-fill"></div></div></div>';
+}
+function scStoryCardHTML(s, col){
+  var pct=Math.round(100*s.progress/s.size), act='';
+  if(col==='todo') act='<button type="button" class="btn mini primary" data-act="sc-take" data-id="'+esc(s.id)+'" aria-label="Tomar la historia '+esc(s.id)+': '+esc(s.text)+'">Tomar →</button>';
+  var wk=Object.keys(s.workers||{}).map(function(id){ return '<span class="wchip">'+esc(mName(id))+' · '+s.workers[id]+'</span>'; }).join('');
+  return '<div class="scard c-'+col+'"><div class="sctop">'+szHTML(s.size)+'<span class="tid">'+esc(s.id)+'</span>'+valHTML(s.value)+(s.urgent?'<span class="tagr urg">Urgente</span>':'')+'</div>'+
+    '<div class="st-text">'+esc(s.text)+'</div>'+
+    '<div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="'+s.size+'" aria-valuenow="'+s.progress+'" aria-label="Avance de '+esc(s.id)+'"><i style="width:'+pct+'%"></i></div>'+
+    '<div class="st-meta">'+s.progress+' de '+s.size+' puntos'+(col==='doing'?' · faltan '+(s.size-s.progress):'')+'</div>'+
+    (wk?'<div class="chips">'+wk+'</div>':'')+act+'</div>';
+}
+function scDevCardHTML(d){
+  return '<div class="dev-card" data-devcard="'+d.id+'"><div class="dev-name">💻 '+esc(d.name)+'</div><div class="cd-bar" aria-hidden="true"><i data-devbar="'+d.id+'"></i></div>'+
+    '<div class="dev-status" data-devtxt="'+d.id+'">…</div>'+
+    '<button type="button" class="btn accent" data-act="sc-roll" data-dev="'+d.id+'" data-devbtn="'+d.id+'" aria-label="Tirar los dados de '+esc(d.name)+'">🎲 Tirar</button></div>';
+}
+function scPendingHTML(){
+  var p=SC.pending, cands=scStories('doing');
+  return '<div class="pending-box" role="alert"><strong>'+esc(mName(p.dev))+' sacó '+p.total+' punto'+(p.total===1?'':'s')+(p.dice.length>1?' ('+p.dice.join(' + ')+')':'')+'</strong><br>¿A qué historia los aplican? Si sobran puntos, se desperdician.'+
+    '<div class="apply-list">'+cands.map(function(s){
+      var need=s.size-s.progress;
+      return '<div class="apply-row"><span><strong>'+esc(s.id)+'</strong> · '+esc(s.text)+' — lleva '+s.progress+' de '+s.size+' (faltan '+need+')'+(p.total>need?' · sobrarían '+(p.total-need):'')+'</span>'+
+        '<button type="button" class="btn accent mini" data-act="sc-apply" data-id="'+esc(s.id)+'">Aplicar aquí</button></div>';
+    }).join('')+'</div></div>';
+}
+function scSprintHTML(){
+  var n=SC.sprintNo, sp=scCur(), sb=scSprintBacklog(n);
+  var todo=sb.filter(function(s){ return s.state==='sprint'; }).sort(byPrio);
+  var doing=sb.filter(function(s){ return s.state==='doing'; }).sort(byPrio);
+  var done=sb.filter(function(s){ return s.state==='hecho'; }).sort(byPrio);
+  var donePts=sum(done.map(function(s){ return s.size; })), lim=SC.cfg.wip;
+  function kpi(v,l){ return '<div class="stat"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>'; }
+  var h='<div class="card"><h2 id="scPhaseTitle" tabindex="-1">🏃 Sprint '+n+' en curso</h2><p><strong>Meta del sprint:</strong> '+esc(sp.goal)+'</p>'+
+    '<div class="sc-kpis">'+kpi(sp.forecast+' pts','Pronóstico')+kpi(donePts+' pts','Terminado por los desarrolladores')+kpi(scRemaining()+' pts','Faltan')+
+    kpi(doing.length+(lim?' / '+lim:''),'Historias en proceso (WIP)')+'</div>'+scBannerBlock()+'</div>';
+  var lr=SC.lastRoll, vals=lr?lr.dice:null, dh='', i;
+  if(vals){ for(i=0;i<vals.length;i++) dh+=dieHTML(vals[i]); } else { for(i=0;i<SC.cfg.dice;i++) dh+=dieHTML(0); }
+  h+='<div class="card"><h2>👥 Desarrolladores</h2><div class="sc-roll-area" id="scDiceArea"><div class="dice-row" id="scDiceRow">'+dh+'</div>'+
+    '<div class="dice-total" id="scDiceTotal">'+(lr?esc(mName(lr.dev))+': '+(lr.dice.length>1?lr.dice.join(' + ')+' = ':'')+lr.total+' punto'+(lr.total===1?'':'s'):'Aún no se ha tirado.')+'</div></div>';
+  if(SC.pending) h+=scPendingHTML();
+  h+='<div class="dev-grid">'+scDevs().map(scDevCardHTML).join('')+'</div>'+
+    '<p class="muted small" style="margin:10px 0 0">Cada desarrollador tira cuando su barra se llena. Primero hay que tomar una historia («Tomar →»). Los puntos de cada dado se aplican a una historia en proceso.</p></div>';
+  h+='<div class="card"><h2>Tablero del sprint</h2><div class="sc-board">'+
+    '<div class="sc-col c-todo"><h3>Sprint Backlog <span>'+todo.length+'</span></h3><div class="body">'+todo.map(function(s){ return scStoryCardHTML(s,'todo'); }).join('')+'</div></div>'+
+    '<div class="sc-col c-doing"><h3>En Proceso <span>'+doing.length+(lim?' / '+lim:'')+'</span></h3><div class="body">'+doing.map(function(s){ return scStoryCardHTML(s,'doing'); }).join('')+'</div></div>'+
+    '<div class="sc-col c-done"><h3>Hecho (por revisar) <span>'+done.length+'</span></h3><div class="body">'+done.map(function(s){ return scStoryCardHTML(s,'done'); }).join('')+'</div></div></div></div>';
+  h+='<div class="card"><h2>Avance del sprint (burndown)</h2><div id="scBurnBox">'+scBurnSVG(sp, true)+'</div><div class="legend"><span><i class="bi"></i>Ideal</span><span><i class="br"></i>Real</span></div></div>';
+  h+='<details class="card" id="scHistDet"'+(scOpen.scHistDet?' open':'')+'><summary>Historial de tiradas ('+sp.rolls.length+')</summary><div class="tbl-wrap">'+scRollsTableHTML(sp)+'</div></details>';
+  h+=scRolesCardHTML();
+  return h;
+}
+function scRollsTableHTML(sp){
+  if(!sp.rolls.length) return '<p class="muted">Todavía no hay tiradas en este sprint.</p>';
+  var h='<table class="log"><thead><tr><th>Min</th><th>Desarrollador</th><th>Dados</th><th>Puntos</th><th>Historia</th><th>Aplicados</th><th>Desperdiciados</th></tr></thead><tbody>';
+  sp.rolls.forEach(function(r){
+    h+='<tr><td>'+fmtMs(r.t)+'</td><td>'+esc(mName(r.dev))+'</td><td>'+r.dice.join(' + ')+'</td><td>'+r.total+'</td><td>'+(r.story?esc(r.story)+(r.completed?' ✔':''):'—')+'</td><td>'+r.applied+'</td><td>'+r.wasted+'</td></tr>';
+  });
+  return h+'</tbody></table>';
+}
+function scRolesCardHTML(){
+  var h='<details class="card" id="scRolesDet"'+(scRolesOpen?' open':'')+'><summary>🎭 Roles del equipo: quién es quién y qué hace</summary><div class="sc-roles">';
+  ['po','sm','dev'].forEach(function(k){
+    var r=SCRUM_ROLES[k], names=scByRole(k).map(function(m){ return esc(m.name); }).join(', ');
+    h+='<div class="sc-role"><h3>'+r.icon+' '+esc(r.rol)+'</h3><p class="who">'+names+'</p><p><strong>Función:</strong> '+esc(r.funcion)+'</p>'+
+      '<p><strong>Responsabilidades:</strong></p><ul>'+r.resp.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul>'+
+      '<p><strong>En esta simulación:</strong></p><ul>'+r.app.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul>'+
+      '<p><strong>Por qué es importante:</strong> '+esc(r.imp)+'</p></div>';
+  });
+  return h+'</div></details>';
+}
+
+function scTake(id){
+  if(SC.phase!=='sprint') return;
+  var s=scStory(id); if(!s||s.state!=='sprint') return;
+  var lim=SC.cfg.wip;
+  if(lim>0 && scStories('doing').length>=lim){
+    scBanner={ kind:'warn', icon:'✋', title:'Límite de WIP alcanzado', items:['Ya hay '+lim+' historias en proceso. Terminen una antes de tomar otra: es mejor terminar que empezar.'], alert:true };
+    scRenderPlay(); return;
+  }
+  var minPrio=Math.min.apply(null, scStories('sprint').map(function(x){ return x.prio; }));
+  s.state='doing'; s.takenAt=Date.now();
+  if(s.prio>minPrio){
+    scBanner={ kind:'info', icon:'💡', title:'Tomaste '+s.id+' fuera de orden', items:['El Product Owner puso otra historia con más prioridad en el Sprint Backlog. A veces hay razones para saltarse el orden, pero hay que decirlo en voz alta.'] };
+  } else { scBanner=null; }
+  scSave(); scRenderPlay();
+  var nb=document.querySelector('[data-act="sc-take"]'); var rb=document.querySelector('[data-devbtn]:not(:disabled)'); (rb||nb||$('#scPhaseTitle')).focus();
+}
+function scPaintTmp(vals){
+  var h='', i; for(i=0;i<vals.length;i++) h+=dieHTML(vals[i]);
+  var row=$('#scDiceRow'); if(row) row.innerHTML=h;
+}
+function scRoll(devId){
+  if(scRolling || !SC || SC.phase!=='sprint' || SC.pending) return;
+  var sp=scCur(), now=Date.now(), dev=scMember(devId);
+  if(!dev || dev.role!=='dev') return;
+  if(now<(sp.ready[devId]||0)) return;
+  if(!scStories('doing').length){
+    scBanner={ kind:'warn', icon:'✋', title:'Primero toma una historia', items:['Pulsa «Tomar →» en una historia del Sprint Backlog para pasarla a «En Proceso». Después tira los dados.'], alert:true };
+    scRenderPlay(); return;
+  }
+  scRolling=true;
+  var vals=[], i;
+  for(i=0;i<SC.cfg.dice;i++) vals.push(1+Math.floor(Math.random()*6));
+  var reduce=window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var dur=reduce?0:700, area=$('#scDiceArea');
+  scTickUI();
+  if(dur){
+    if(area) area.classList.add('rolling');
+    scRollInterval=setInterval(function(){
+      var tmp=[], k; for(k=0;k<SC.cfg.dice;k++) tmp.push(1+Math.floor(Math.random()*6));
+      scPaintTmp(tmp);
+    },90);
+  }
+  scRollTimer=setTimeout(function(){
+    clearInterval(scRollInterval);
+    var a2=$('#scDiceArea'); if(a2) a2.classList.remove('rolling');
+    scRolling=false;
+    if(!SC || SC.phase!=='sprint') return;
+    var total=sum(vals), sp2=scCur();
+    sp2.ready[devId]=Date.now()+SC.cfg.minutes*60000/SC_ROLLS;
+    SC.lastRoll={ dev:devId, dice:vals, total:total };
+    SC.pending={ dev:devId, dice:vals, total:total };
+    var cands=scStories('doing');
+    if(cands.length===0){ SC.pending=null; scBanner={ kind:'warn', icon:'✋', title:'No había historias en proceso', items:['Los puntos de esa tirada se perdieron. Tomen una historia antes de tirar.'], alert:true }; scSave(); scRenderPlay(); }
+    else if(cands.length===1){ scApply(cands[0].id); }
+    else { scBanner=null; scSave(); scRenderPlay(); var ab=document.querySelector('[data-act="sc-apply"]'); if(ab) ab.focus(); }
+  }, dur);
+}
+function scApply(storyId){
+  var p=SC.pending, s=scStory(storyId); if(!p||!s||s.state!=='doing') return;
+  var sp=scCur(), now=Date.now();
+  var need=s.size-s.progress, applied=Math.min(p.total,need), wasted=p.total-applied;
+  s.progress+=applied; s.workers[p.dev]=(s.workers[p.dev]||0)+applied;
+  var completed=false;
+  if(s.progress>=s.size){ s.state='hecho'; s.doneAt=now; completed=true; }
+  sp.rolls.push({ t:now-sp.startAt, dev:p.dev, dice:p.dice, total:p.total, applied:applied, wasted:wasted, story:s.id, completed:completed });
+  sp.burn.push({ t:now-sp.startAt, rem:scRemaining() });
+  var items=[];
+  items.push(mName(p.dev)+' aplicó '+applied+' punto'+(applied===1?'':'s')+' a '+s.id+(completed?'':' ('+s.progress+' de '+s.size+')')+'.');
+  if(wasted>0) items.push('Sobraron '+wasted+' punto'+(wasted===1?'':'s')+' que no se pueden pasar a otra historia: se desperdician.');
+  if(completed) items.push('🎉 '+s.id+' quedó terminada por los desarrolladores. El Product Owner la aceptará (o no) en la Revisión.');
+  scBanner={ kind: completed?'ok':(wasted>0?'warn':'info'), icon: completed?'🎉':'🎲', title:(completed?'¡Historia terminada!':'Puntos aplicados'), items:items };
+  SC.pending=null; scSave(); scRenderPlay();
+  var rb=document.querySelector('[data-devbtn]:not(:disabled)'); if(rb) rb.focus();
+}
+
+/* ---------- ticker, daily, cambio urgente, fin del sprint ---------- */
+function scStartTicker(){ scStopTicker(); scTickH=setInterval(scTick,250); scTick(); }
+function scStopTicker(){ if(scTickH){ clearInterval(scTickH); scTickH=null; } }
+function scTickUI(){
+  if(!SC || SC.phase!=='sprint') return;
+  var sp=scCur(), now=Date.now(), dur=SC.cfg.minutes*60000, rem=sp.endAt-now, secs=Math.max(0,Math.ceil(rem/1000));
+  var bar=$('#scTimerBar');
+  if(bar){
+    $('#scTimerText').textContent=pad2(Math.floor(secs/60))+':'+pad2(secs%60);
+    $('#scTimerFill').style.width=Math.min(100,Math.max(0,(dur-rem)/dur*100))+'%';
+    bar.classList.toggle('danger', secs<=30);
+    bar.classList.toggle('warn', secs>30 && secs<=60);
+    $('#scTimerState').textContent = secs<=30 ? '¡Últimos segundos!' : (secs<=60 ? 'Queda menos de un minuto' : 'Tiempo del sprint '+SC.sprintNo);
+  }
+  if(secs<=60 && !scAnn60){ scAnn60=true; scSay('Queda un minuto del sprint.'); }
+  if(now-scBurnAt>2000){ scBurnAt=now; var bx=$('#scBurnBox'); if(bx) bx.innerHTML=scBurnSVG(sp,true); }
+  var cd=dur/SC_ROLLS, blocked=!!SC.pending || scRolling;
+  scDevs().forEach(function(d){
+    var left=(sp.ready[d.id]||0)-now;
+    var card=$('[data-devcard="'+d.id+'"]'), btn=$('[data-devbtn="'+d.id+'"]'), txt=$('[data-devtxt="'+d.id+'"]'), br=$('[data-devbar="'+d.id+'"]');
+    if(!card||!btn||!txt||!br) return;
+    var ready=left<=0;
+    card.classList.toggle('ready', ready);
+    br.style.width=(ready?100:Math.max(0,Math.min(100,(1-left/cd)*100)))+'%';
+    txt.textContent = ready ? '✅ Listo para tirar' : '🛠 Trabajando… '+Math.ceil(left/1000)+' s';
+    btn.disabled = !ready || blocked;
+  });
+}
+function scTick(){
+  if(!SC || SC.phase!=='sprint'){ scStopTicker(); return; }
+  var sp=scCur(), now=Date.now(), dur=SC.cfg.minutes*60000, el=now-sp.startAt;
+  if(now>=sp.endAt){ scEndSprint(); return; }
+  scTickUI();
+  if(activeModal) return;
+  if(sp.urgent && !sp.urgent.decision){ scOpenUrgent(); return; }
+  if(SC.cfg.daily && !sp.dailyDone && el>=dur*0.5){ scOpenDaily(); return; }
+  if(SC.cfg.urgent && !sp.urgentDone && el>=dur*0.65 && (sp.dailyDone || !SC.cfg.daily)){ scOpenUrgent(); }
+}
+function scOpenDaily(){
+  var sp=scCur(); sp.dailyDone=true; scSave();
+  var iv=null, left=60, m=null;
+  var devsTxt=scDevs().map(function(d){ return esc(d.name); }).join(', ');
+  m=openModal({
+    gameAction:true,
+    title:'🗣️ Daily Scrum · 1 minuto',
+    html:'<p>Dirige: <strong>'+smName()+'</strong> (Scrum Master). Cada Desarrollador ('+devsTxt+') responde en voz alta:</p>'+
+      '<ol><li>¿Qué hice desde la última vez?</li><li>¿Qué voy a hacer ahora?</li><li>¿Qué me bloquea?</li></ol>'+
+      '<p class="muted small">El cronómetro del sprint sigue corriendo: una Daily larga le quita tiempo al trabajo. Estado: pronóstico '+sp.forecast+' pts · faltan '+scRemaining()+' pts.</p>'+
+      '<p><strong>Tiempo de la Daily: <span id="dailyLeft">1:00</span></strong></p>',
+    buttons:[ { label:'Terminar la Daily', kind:'primary' } ],
+    onOpen:function(root){
+      var el=$('#dailyLeft',root);
+      iv=setInterval(function(){ left--; if(el) el.textContent='0:'+pad2(Math.max(0,left)); if(left<=0){ m.close(); } },1000);
+    },
+    onClose:function(){ clearInterval(iv); }
+  });
+}
+function scOpenUrgent(){
+  var sp=scCur();
+  if(!sp.urgent){
+    var txt=SC_URGENT[Math.floor(Math.random()*SC_URGENT.length)], size=Math.random()<0.5?3:5;
+    sp.urgent={ text:txt, size:size, decision:null }; sp.urgentDone=true; scSave();
+  }
+  var u=sp.urgent, waste=sum(sp.rolls.map(function(r){ return r.wasted; }));
+  openModal({
+    gameAction:true, noEscape:true,
+    title:'⚡ Cambio urgente del cliente',
+    html:'<p><strong>«'+esc(u.text)+'»</strong></p><p>Tamaño estimado: <strong>'+u.size+' puntos</strong> · Valor para el cliente: ★★★ (alto).</p>'+
+      '<p>Decide el Product Owner (<strong>'+poName()+'</strong>) junto con los Desarrolladores. Preguntas clave: ¿cabe sin poner en riesgo la meta del sprint? ¿vale más que lo que ya está en proceso?</p>'+
+      '<p class="muted small">Meta del sprint: «'+esc(sp.goal)+'». Faltan '+scRemaining()+' puntos del pronóstico.</p>',
+    buttons:[
+      { label:'Agregarla a este sprint', kind:'primary', onClick:function(){ scUrgentDecide('agregada'); } },
+      { label:'Dejarla para el siguiente sprint', kind:'ghost', onClick:function(){ scUrgentDecide('pospuesta'); } }
+    ]
+  });
+}
+function scUrgentDecide(dec, silent){
+  var sp=scCur(), u=sp.urgent; if(!u || u.decision) return;
+  u.decision=dec; u.at=Date.now()-sp.startAt;
+  var st={ id:'U-'+pad2(SC.sprintNo), text:u.text, size:u.size, value:3, prio:0, state:'pb', sprint:0, progress:0, workers:{}, takenAt:null, doneAt:null, urgent:true, rej:0 };
+  if(dec==='agregada'){
+    st.state='sprint'; st.sprint=SC.sprintNo; sp.scopeAdded+=st.size;
+    st.prio=Math.min.apply(null, SC.stories.map(function(x){ return x.prio; }))-1;
+    SC.stories.push(st); sp.burn.push({ t:u.at, rem:scRemaining() });
+    scBanner={ kind:'warn', icon:'⚡', title:'Agregaron el cambio urgente al sprint', items:['El sprint ahora tiene '+st.size+' puntos más. Si no se termina, el pronóstico original queda en riesgo.'] };
+  } else {
+    st.prio=Math.min.apply(null, SC.stories.map(function(x){ return x.prio; }))-1;
+    SC.stories.push(st);
+    scBanner={ kind:'info', icon:'🛡️', title:'Dejaron el cambio para el siguiente sprint', items:['Quedó arriba del Product Backlog. Así protegen la meta del sprint actual.'] };
+  }
+  scSave(); if(!silent){ scRenderPlay(); }
+}
+function scEndSprint(){
+  if(!SC || SC.phase!=='sprint') return;
+  var sp=scCur(), n=SC.sprintNo, now=Date.now();
+  clearTimeout(scRollTimer); clearInterval(scRollInterval); scRolling=false; scStopTicker();
+  if(activeModal && activeModal.gameAction) activeModal.close();
+  if(sp.urgent && !sp.urgent.decision) scUrgentDecide('pospuesta', true);
+  if(SC.pending){
+    sp.rolls.push({ t:sp.endAt-sp.startAt, dev:SC.pending.dev, dice:SC.pending.dice, total:SC.pending.total, applied:0, wasted:SC.pending.total, story:null, completed:false });
+    SC.pending=null;
+  }
+  sp.endedAt=now;
+  sp.burn.push({ t:sp.endAt-sp.startAt, rem:scRemaining() });
+  sp.reviewItems=[]; sp.unfinished=[];
+  SC.stories.forEach(function(s){
+    if(s.sprint!==n) return;
+    if(s.state==='hecho'){
+      sp.reviewItems.push({ id:s.id, text:s.text, size:s.size, value:s.value, workers:s.workers, urgent:!!s.urgent,
+        cycleMs:(s.doneAt && s.takenAt) ? s.doneAt-s.takenAt : null, decision:null });
+    } else if(s.state==='sprint' || s.state==='doing'){
+      sp.unfinished.push({ id:s.id, text:s.text, size:s.size, progress:s.progress, urgent:!!s.urgent });
+      s.state='pb'; s.progress=0; s.workers={}; s.sprint=0; s.takenAt=null;
+    }
+  });
+  scBanner={ kind:'info', icon:'⏹', title:'¡Terminó el tiempo del sprint!', items:['Lo que no quedó terminado volvió al Product Backlog y vale cero.','Ahora el Product Owner decide qué se acepta.'] };
+  scSay('Terminó el tiempo del sprint. Pasan a la Revisión.');
+  scGoto('review');
+}
+
+
+/* ================== gráficas ================== */
+function scBurnSVG(sp, live){
+  var W=420, H=220, L=40, R=12, T=14, B=30, dur=SC.cfg.minutes*60000, i;
+  var pts=sp.burn.slice();
+  if(!pts.length) pts=[{ t:0, rem:sp.forecast }];
+  if(live && sp.startAt){
+    var el=Math.min(dur, Date.now()-sp.startAt), lastP=pts[pts.length-1];
+    if(el>lastP.t) pts.push({ t:el, rem:lastP.rem });
+  }
+  var maxY=Math.max(1, sp.forecast+sp.scopeAdded);
+  pts.forEach(function(p){ if(p.rem>maxY) maxY=p.rem; });
+  function X(t){ return (L+(W-L-R)*Math.max(0,Math.min(1,t/dur))).toFixed(1); }
+  function Y(v){ return (T+(H-T-B)*(1-v/maxY)).toFixed(1); }
+  var path='M'+X(pts[0].t)+','+Y(pts[0].rem);
+  for(i=1;i<pts.length;i++){ path+=' L'+X(pts[i].t)+','+Y(pts[i-1].rem)+' L'+X(pts[i].t)+','+Y(pts[i].rem); }
+  var ideal='M'+X(0)+','+Y(sp.forecast)+' L'+X(dur)+','+Y(0);
+  var cur=pts[pts.length-1].rem;
+  return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Gráfica de avance del sprint: puntos que faltan a lo largo del tiempo. Pronóstico '+sp.forecast+' puntos, faltan '+cur+'.">'+
+    '<title>Burndown del sprint '+sp.no+'</title>'+
+    '<line class="ch-axis" x1="'+L+'" y1="'+T+'" x2="'+L+'" y2="'+(H-B)+'"/><line class="ch-axis" x1="'+L+'" y1="'+(H-B)+'" x2="'+(W-R)+'" y2="'+(H-B)+'"/>'+
+    '<text class="ch-txt" x="'+(L-6)+'" y="'+(Number(Y(maxY))+4)+'" text-anchor="end">'+maxY+'</text>'+
+    '<text class="ch-txt" x="'+(L-6)+'" y="'+(H-B+4)+'" text-anchor="end">0</text>'+
+    '<text class="ch-txt" x="'+L+'" y="'+(H-10)+'">0 min</text>'+
+    '<text class="ch-txt" x="'+(W-R)+'" y="'+(H-10)+'" text-anchor="end">'+SC.cfg.minutes+' min</text>'+
+    '<text class="ch-txt" x="'+(L+4)+'" y="'+(T+10)+'">puntos que faltan</text>'+
+    '<path class="bd-ideal" d="'+ideal+'"/><path class="bd-real" d="'+path+'"/></svg>';
+}
+function scBarsSVG(){
+  var ms=SC.sprints.filter(function(s){ return s.m; });
+  var W=420, H=220, L=30, B=32, T=22, i;
+  var max=1;
+  ms.forEach(function(s){ max=Math.max(max, s.m.forecast, s.m.velocity); });
+  var gw=(W-L-10)/ms.length, bw=Math.min(46, gw/2-8);
+  function Y(v){ return T+(H-T-B)*(1-v/max); }
+  var g='';
+  ms.forEach(function(s,idx){
+    var x0=L+idx*gw+gw/2;
+    var yf=Y(s.m.forecast), yr=Y(s.m.velocity);
+    g+='<rect class="bar-f" x="'+(x0-bw-3)+'" y="'+yf+'" width="'+bw+'" height="'+(H-B-yf)+'"/>'+
+       '<rect class="bar-r" x="'+(x0+3)+'" y="'+yr+'" width="'+bw+'" height="'+(H-B-yr)+'"/>'+
+       '<text class="ch-val" x="'+(x0-bw/2-3)+'" y="'+(yf-4)+'" text-anchor="middle">'+s.m.forecast+'</text>'+
+       '<text class="ch-val" x="'+(x0+bw/2+3)+'" y="'+(yr-4)+'" text-anchor="middle">'+s.m.velocity+'</text>'+
+       '<text class="ch-txt" x="'+x0+'" y="'+(H-12)+'" text-anchor="middle">Sprint '+s.no+'</text>';
+  });
+  return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Gráfica de barras: pronóstico y velocidad por sprint. '+ms.map(function(s){ return 'Sprint '+s.no+': pronóstico '+s.m.forecast+', velocidad '+s.m.velocity; }).join('; ')+'.">'+
+    '<title>Pronóstico contra velocidad</title><line class="ch-axis" x1="'+L+'" y1="'+(H-B)+'" x2="'+(W-6)+'" y2="'+(H-B)+'"/>'+g+'</svg>';
+}
+
+/* ================== revisión ================== */
+function scDecide(id, dec){
+  var sp=scCur(), it=null, i;
+  for(i=0;i<sp.reviewItems.length;i++){ if(sp.reviewItems[i].id===id){ it=sp.reviewItems[i]; break; } }
+  var st=scStory(id);
+  if(!it || !st || it.decision) return;
+  if(dec==='ok'){ st.state='aceptada'; sp.acceptedIds.push(id); it.decision='ok'; }
+  else {
+    st.state='pb'; st.progress=0; st.workers={}; st.sprint=0; st.takenAt=null; st.doneAt=null; st.rej=(st.rej||0)+1;
+    sp.rejectedIds.push(id); it.decision='no';
+  }
+  scBanner=null; scSave(); scRenderPlay();
+  var nb=document.querySelector('[data-act="sc-accept"]'); (nb||$('#scGoalMet')||$('#scPhaseTitle')).focus();
+}
+function scComputeSprint(sp){
+  var devs=scDevs().length, dice=SC.cfg.dice;
+  var acc=sp.reviewItems.filter(function(i){ return i.decision==='ok'; });
+  var rej=sp.reviewItems.filter(function(i){ return i.decision==='no'; });
+  var rollPts=sum(sp.rolls.map(function(r){ return r.total; })), applied=sum(sp.rolls.map(function(r){ return r.applied; })), wasted=sum(sp.rolls.map(function(r){ return r.wasted; }));
+  var maxCap=devs*SC_ROLLS*6*dice;
+  var cyc=sp.reviewItems.filter(function(i){ return i.cycleMs!==null; }).map(function(i){ return i.cycleMs; });
+  return { forecast:sp.forecast, scope:sp.scopeAdded, velocity:sum(acc.map(function(i){ return i.size; })), acceptedN:acc.length, rejectedN:rej.length,
+    unfinishedN:sp.unfinished.length, unfinishedPts:sum(sp.unfinished.map(function(u){ return u.size; })), value:sum(acc.map(function(i){ return i.value; })),
+    rolls:sp.rolls.filter(function(r){ return r.story; }).length, rollsMax:devs*SC_ROLLS, rollPts:rollPts, applied:applied, wasted:wasted,
+    wastePct:rollPts?Math.round(100*wasted/rollPts):0, eff:maxCap?Math.round(100*applied/maxCap):0, cycleMs:cyc.length?sum(cyc)/cyc.length:null, goalMet:sp.review.goalMet };
+}
+var GOAL_TXT={ si:'Sí, se cumplió', parcial:'Parcialmente', no:'No se cumplió' };
+function scConfirmReview(){
+  var sp=scCur(), pend=sp.reviewItems.filter(function(i){ return !i.decision; }).length, errs=[];
+  if(pend>0) errs.push('Decidan qué hacer con '+pend+' historia(s) pendiente(s): aceptar o rechazar.');
+  if(!sp.review.goalMet) errs.push('Indiquen si se cumplió la meta del sprint.');
+  if(errs.length){ scBanner={ kind:'warn', icon:'✋', title:'Falta completar la Revisión', items:errs, alert:true }; scRenderPlay(); return; }
+  sp.m=scComputeSprint(sp); sp.review.confirmed=true;
+  scBanner={ kind:'ok', icon:'📊', title:'Revisión completa', items:['Velocidad del sprint: '+sp.m.velocity+' puntos aceptados (pronóstico: '+sp.m.forecast+').','La velocidad les sirve para pronosticar el siguiente sprint.'] };
+  scSave(); scRenderPlay(); var b=document.querySelector('[data-act="sc-toretro"]'); if(b) b.focus();
+}
+function scKpiHTML(v,l){ return '<div class="stat"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>'; }
+function scReviewHTML(){
+  var sp=scCur(), n=SC.sprintNo, rv=sp.review, items=sp.reviewItems, m=sp.m;
+  var h='<div class="card"><h2 id="scPhaseTitle" tabindex="-1">🔍 Revisión del Sprint '+n+'</h2>'+
+    '<p class="muted">Participa todo el equipo. El Product Owner (<strong>'+poName()+'</strong>) decide qué se acepta según la definición de terminado. Tiempo sugerido: 2 minutos.</p>'+
+    '<div class="role-box"><strong>Meta del sprint:</strong> '+esc(sp.goal)+'<br><strong>Pronóstico:</strong> '+sp.forecast+' puntos'+(sp.scopeAdded?' (más '+sp.scopeAdded+' del cambio urgente)':'')+'</div>'+scBannerBlock();
+  h+='<h3>Definición de terminado</h3><ul class="dod">'+SC_DOD.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul>';
+  h+='<h3>Historias terminadas por los desarrolladores ('+items.length+')</h3>';
+  if(!items.length) h+='<p class="muted">Ninguna historia quedó terminada en este sprint.</p>';
+  items.forEach(function(it){
+    var who=Object.keys(it.workers||{}).map(function(id){ return esc(mName(id))+' '+it.workers[id]; }).join(' · ');
+    h+='<div class="review-item'+(it.decision?(it.decision==='ok'?' ok':' no'):'')+'"><div>'+szHTML(it.size)+' <strong>'+esc(it.id)+'</strong> · '+esc(it.text)+' '+valHTML(it.value)+
+      '<div class="st-meta">Trabajaron: '+(who||'—')+(it.cycleMs?' · '+fmtMs(it.cycleMs)+' desde que se tomó hasta que quedó terminada':'')+'</div></div>';
+    if(!it.decision){
+      h+='<div class="st-actions"><button type="button" class="btn mini primary" data-act="sc-accept" data-id="'+esc(it.id)+'" aria-label="Aceptar '+esc(it.id)+'">✓ Aceptar</button>'+
+         '<button type="button" class="btn mini accent" data-act="sc-reject" data-id="'+esc(it.id)+'" aria-label="Rechazar '+esc(it.id)+'">✗ Rechazar</button></div>';
+    } else {
+      h+='<strong>'+(it.decision==='ok'?'✓ Aceptada':'✗ Rechazada: vuelve al Product Backlog')+'</strong>';
+    }
+    h+='</div>';
+  });
+  h+='<h3>Historias sin terminar ('+sp.unfinished.length+')</h3>';
+  if(!sp.unfinished.length) h+='<p class="muted">Todo lo que se tomó quedó terminado.</p>';
+  else {
+    h+='<p class="muted small">No cumplen la definición de terminado: valen cero y regresaron al Product Backlog.</p>';
+    sp.unfinished.forEach(function(u){ h+='<div class="review-item no"><div>'+szHTML(u.size)+' <strong>'+esc(u.id)+'</strong> · '+esc(u.text)+'<div class="st-meta">Avance perdido: '+u.progress+' de '+u.size+' puntos</div></div></div>'; });
+  }
+  if(sp.urgent){
+    h+='<h3>Cambio urgente del cliente</h3><p>«'+esc(sp.urgent.text)+'» ('+sp.urgent.size+' pts) → <strong>'+(sp.urgent.decision==='agregada'?'La agregaron al sprint':'La dejaron para el siguiente sprint')+'</strong>.</p>';
+  }
+  if(!rv.confirmed){
+    var pend=items.filter(function(i){ return !i.decision; }).length;
+    h+='<div class="field" style="margin-top:14px"><label for="scGoalMet">¿Se cumplió la meta del sprint?</label><select id="scGoalMet" data-sc-input="goalmet">'+
+      '<option value="">Elige una opción…</option>'+['si','parcial','no'].map(function(k){ return '<option value="'+k+'"'+(rv.goalMet===k?' selected':'')+'>'+GOAL_TXT[k]+'</option>'; }).join('')+'</select></div>'+
+      '<p style="margin:12px 0 0"><button type="button" class="btn primary big" data-act="sc-confirm">Calcular resultados del sprint</button>'+
+      (pend?' <span class="hint bad">Faltan '+pend+' historia(s) por decidir.</span>':'')+'</p>';
+  }
+  h+='</div>';
+  if(rv.confirmed && m){
+    h+='<div class="card"><h2>📊 Resultados del Sprint '+n+'</h2><div class="sc-kpis">'+
+      scKpiHTML(m.forecast+' pts','Pronóstico')+scKpiHTML(m.velocity+' pts','Velocidad (aceptado)')+scKpiHTML(m.acceptedN+' / '+m.rejectedN,'Aceptadas / rechazadas')+
+      scKpiHTML(m.unfinishedN,'Sin terminar')+scKpiHTML(m.value,'Valor entregado (★)')+scKpiHTML(m.eff+'%','Eficiencia (sobre capacidad máxima)')+
+      scKpiHTML(m.wastePct+'%','Puntos desperdiciados')+scKpiHTML(m.cycleMs===null?'—':fmtMs(m.cycleMs),'Tiempo promedio por historia')+scKpiHTML(GOAL_TXT[m.goalMet]||'—','Meta del sprint')+'</div>'+
+      '<h3>Burndown</h3>'+scBurnSVG(sp,false)+'<div class="legend"><span><i class="bi"></i>Ideal</span><span><i class="br"></i>Real</span></div>'+
+      '<p class="muted small">Eficiencia = puntos aplicados ÷ capacidad máxima ('+scDevs().length+' desarrolladores × '+SC_ROLLS+' tiradas × 6 × '+SC.cfg.dice+' dado'+(SC.cfg.dice===1?'':'s')+' = '+(scDevs().length*SC_ROLLS*6*SC.cfg.dice)+' puntos). Tiradas realizadas: '+m.rolls+' de '+m.rollsMax+' posibles.</p>'+
+      '<p style="margin:12px 0 0"><button type="button" class="btn primary big" data-act="sc-toretro">Continuar a la Retrospectiva →</button></p></div>';
+  }
+  return h;
+}
+
+/* ================== retrospectiva ================== */
+var scRetroTmp={ start:'', stop:'', cont:'' };
+var RETRO_COLS=[['start','Empezar a…','🟢'],['stop','Parar de…','🔴'],['cont','Continuar…','🔵']];
+function scSuggestions(sp){
+  var m=sp.m, out=[];
+  if(m.unfinishedN>0) out.push({ col:'stop', text:'Empezar historias nuevas sin terminar las que ya están en proceso' });
+  if(m.rejectedN>0) out.push({ col:'start', text:'Revisar entre compañeros cada historia antes de darla por terminada' });
+  if(m.wastePct>=15) out.push({ col:'start', text:'Elegir la historia que mejor encaje con los puntos que sacó el dado' });
+  if(m.forecast>m.velocity*1.3) out.push({ col:'start', text:'Pronosticar usando la velocidad del sprint anterior' });
+  if(m.velocity>0 && m.forecast<m.velocity*0.7) out.push({ col:'start', text:'Pronosticar un poco más: el equipo puede con más' });
+  if(SC.cfg.daily) out.push({ col:'cont', text:'Hacer la Daily Scrum a la mitad del sprint' });
+  out.push({ col:'cont', text:'Poner arriba del backlog lo que más valor da al cliente' });
+  return out.slice(0,5);
+}
+function scRetroAdd(col, text){
+  var sp=scCur(), tx=(text!==undefined?text:($('#rin-'+col)||{}).value||'').trim().slice(0,90);
+  if(!tx) return;
+  if(sp.retro[col].length>=6){ return; }
+  sp.retro[col].push(tx); scRetroTmp[col]='';
+  scSave(); scRenderPlay();
+  var inp=$('#rin-'+col); if(inp) inp.focus();
+}
+function scRetroDone(){
+  var sp=scCur(), rt=sp.retro, total=rt.start.length+rt.stop.length+rt.cont.length, last=SC.sprintNo>=SC.cfg.sprints, errs=[];
+  if(total<1) errs.push('Anoten al menos una idea en alguna columna.');
+  if(!last && (rt.commit||'').trim().length<3) errs.push('Elijan un compromiso de mejora para el siguiente sprint (solo uno).');
+  if(errs.length){ scBanner={ kind:'warn', icon:'✋', title:'Falta completar la Retrospectiva', items:errs, alert:true }; scRenderPlay(); return; }
+  if(!last){
+    SC.sprintNo++; SC.sprints.push(scNewSprint(SC.sprintNo)); scRolesOpen=false;
+    scBanner={ kind:'info', icon:'🔁', title:'Empieza el Sprint '+SC.sprintNo, items:['Su compromiso de mejora: «'+rt.commit.trim()+'». Pónganlo en práctica.','Usen la velocidad del sprint anterior para pronosticar.'] };
+    scGoto('planning');
+  } else {
+    scBanner=null; scGoto('final');
+  }
+}
+function scRetroHTML(){
+  var sp=scCur(), n=SC.sprintNo, rt=sp.retro, m=sp.m, last=n>=SC.cfg.sprints;
+  var h='<div class="card"><h2 id="scPhaseTitle" tabindex="-1">🔄 Retrospectiva del Sprint '+n+'</h2>'+
+    '<p class="muted">Facilita el Scrum Master (<strong>'+smName()+'</strong>). Hablen de <em>cómo trabajaron</em>, no solo de qué hicieron: ¿qué salió bien? ¿qué se puede mejorar? ¿qué vamos a intentar? Tiempo sugerido: 3 minutos.</p>'+
+    '<div class="role-box">Pronosticaron <strong>'+m.forecast+'</strong> puntos y terminaron <strong>'+m.velocity+'</strong>. Sin terminar: '+m.unfinishedN+' · Rechazadas: '+m.rejectedN+' · Puntos desperdiciados: '+m.wastePct+'%.</div>'+scBannerBlock();
+  var sg=scSuggestions(sp);
+  h+='<details class="role-box" id="scSuggDet"'+(scOpen.scSuggDet?' open':'')+'><summary>Ideas del Scrum Master según los datos del sprint</summary><div class="sugg">'+sg.map(function(s,i){
+    return '<button type="button" class="btn mini ghost" data-act="sc-sugg" data-i="'+i+'">+ '+esc(RETRO_COLS.filter(function(c){ return c[0]===s.col; })[0][2])+' '+esc(s.text)+'</button>';
+  }).join('')+'</div></details>';
+  h+='<div class="retro-grid">'+RETRO_COLS.map(function(c){
+    var items=rt[c[0]];
+    return '<div class="retro-col '+c[0]+'"><h3>'+c[2]+' '+c[1]+'</h3><div class="retro-add"><input id="rin-'+c[0]+'" class="sc-in retro-in" data-col="'+c[0]+'" type="text" maxlength="90" placeholder="Escribe una idea y pulsa Enter" aria-label="Nueva idea en «'+c[1]+'»" value="'+esc(scRetroTmp[c[0]]||'')+'" autocomplete="off">'+
+      '<button type="button" class="btn mini primary" data-act="sc-retro-add" data-col="'+c[0]+'" aria-label="Agregar idea a «'+c[1]+'»">+</button></div><ul>'+
+      items.map(function(t,i){
+        return '<li><span>'+esc(t)+'</span><span class="st-actions"><button type="button" class="btn mini ghost" data-act="sc-retro-pick" data-col="'+c[0]+'" data-i="'+i+'" aria-label="Elegir como compromiso: '+esc(t)+'" title="Elegir como compromiso de mejora">★</button>'+
+          '<button type="button" class="btn mini ghost" data-act="sc-retro-del" data-col="'+c[0]+'" data-i="'+i+'" aria-label="Quitar: '+esc(t)+'">✕</button></span></li>';
+      }).join('')+'</ul></div>';
+  }).join('')+'</div>';
+  h+='<div class="field" style="margin-top:14px"><label for="scCommit">'+(last?'Compromiso de mejora (opcional, es el último sprint)':'Compromiso de mejora para el siguiente sprint (elijan solo uno)')+'</label>'+
+    '<input id="scCommit" class="sc-in" data-sc-input="commit" type="text" maxlength="120" placeholder="Usa ★ en una idea o escríbelo aquí" value="'+esc(rt.commit||'')+'" autocomplete="off"></div>';
+  h+='<p style="margin:14px 0 0"><button type="button" class="btn primary big" data-act="sc-retro-done">'+(last?'Ver resultados de todos los sprints →':'Terminar y planear el Sprint '+(n+1)+' →')+'</button></p></div>';
+  return h;
+}
+
+/* ================== resultados finales ================== */
+function scInsights(){
+  var ms=SC.sprints.filter(function(s){ return s.m; }).map(function(s){ return s.m; }), out=[];
+  if(ms.length>=2){
+    var a=ms[0], b=ms[ms.length-1];
+    if(b.velocity>a.velocity) out.push('La velocidad subió de '+a.velocity+' a '+b.velocity+' puntos entre el sprint 1 y el '+ms.length+': eso es «inspeccionar y adaptar» en acción.');
+    else if(b.velocity<a.velocity) out.push('La velocidad bajó de '+a.velocity+' a '+b.velocity+' puntos. Revisen qué cambió: ¿empezaron demasiadas historias a la vez? ¿hubo cambios urgentes?');
+    else out.push('La velocidad se mantuvo en '+b.velocity+' puntos: el equipo es predecible.');
+    var da=Math.abs(a.forecast-a.velocity), db=Math.abs(b.forecast-b.velocity);
+    if(db<da) out.push('El pronóstico se acercó a la realidad: en el sprint 1 se equivocaron por '+da+' puntos y en el '+ms.length+' por '+db+'.');
+    else if(db>da) out.push('El pronóstico se alejó de la realidad: de '+da+' puntos de diferencia pasó a '+db+'. ¿Usaron la velocidad anterior para pronosticar?');
+    else out.push('La diferencia entre pronóstico y resultado fue la misma ('+da+' puntos) en el primer y el último sprint.');
+  }
+  var unf=sum(ms.map(function(m){ return m.unfinishedN; }));
+  out.push(unf>0 ? 'Entre todos los sprints quedaron '+unf+' historia(s) sin terminar. Lo que no se termina no entrega valor: ¿ayudaría un límite de WIP?' : 'No quedó ninguna historia sin terminar: el equipo terminó lo que empezó.');
+  var wp=ms.length?Math.round(sum(ms.map(function(m){ return m.wastePct; }))/ms.length):0;
+  if(wp>=15) out.push('En promedio se desperdició el '+wp+'% de los puntos de los dados por no encajar con lo que faltaba en las historias.');
+  var urg=SC.sprints.filter(function(s){ return s.urgent; });
+  if(urg.length) out.push('Ante el cambio urgente decidieron: '+urg.map(function(s){ return 'sprint '+s.no+' → '+(s.urgent.decision==='agregada'?'la agregaron':'la pospusieron'); }).join('; ')+'. ¿Qué pasó con la meta del sprint en cada caso?');
+  return out;
+}
+function scFinalHTML(){
+  var sps=SC.sprints.filter(function(s){ return s.m; });
+  var h='<div class="card"><h2 id="scPhaseTitle" tabindex="-1">🏁 Resultados de los '+sps.length+' sprints</h2><p class="muted">Comparen sprint contra sprint: aquí se ve si el equipo aprendió e inspeccionó y adaptó.</p>';
+  h+='<div class="tbl-wrap"><table class="log"><thead><tr><th>Indicador</th>'+sps.map(function(s){ return '<th>Sprint '+s.no+'</th>'; }).join('')+'</tr></thead><tbody>';
+  function row(label, fn){ h+='<tr><th scope="row">'+label+'</th>'+sps.map(function(s){ return '<td>'+fn(s,s.m)+'</td>'; }).join('')+'</tr>'; }
+  row('Meta del sprint', function(s){ return esc(s.goal); });
+  row('Pronóstico (puntos)', function(s,m){ return m.forecast; });
+  row('Alcance agregado (cambio urgente)', function(s,m){ return m.scope?'+'+m.scope:'—'; });
+  row('<strong>Velocidad (puntos aceptados)</strong>', function(s,m){ return '<strong>'+m.velocity+'</strong>'; });
+  row('Historias aceptadas / rechazadas', function(s,m){ return m.acceptedN+' / '+m.rejectedN; });
+  row('Historias sin terminar', function(s,m){ return m.unfinishedN; });
+  row('Valor entregado (★)', function(s,m){ return m.value; });
+  row('Tiradas realizadas', function(s,m){ return m.rolls+' de '+m.rollsMax; });
+  row('Puntos aplicados / desperdiciados', function(s,m){ return m.applied+' / '+m.wasted+' ('+m.wastePct+'%)'; });
+  row('Eficiencia (sobre capacidad máxima)', function(s,m){ return m.eff+'%'; });
+  row('Tiempo promedio por historia', function(s,m){ return m.cycleMs===null?'—':fmtMs(m.cycleMs); });
+  row('¿Se cumplió la meta?', function(s,m){ return GOAL_TXT[m.goalMet]||'—'; });
+  row('Cambio urgente', function(s){ return s.urgent ? (s.urgent.decision==='agregada'?'La agregaron':'La pospusieron') : '—'; });
+  row('Compromiso de mejora', function(s){ return s.retro.commit?esc(s.retro.commit):'—'; });
+  h+='</tbody></table></div></div>';
+  h+='<div class="card"><h2>📈 Pronóstico contra velocidad</h2>'+scBarsSVG()+'<div class="legend"><span><i class="f"></i>Pronóstico</span><span><i class="r"></i>Velocidad (aceptado)</span></div></div>';
+  h+='<div class="card"><h2>📉 Burndown de cada sprint</h2><div class="charts-row">'+sps.map(function(s){ return '<div><strong>Sprint '+s.no+'</strong>'+scBurnSVG(s,false)+'</div>'; }).join('')+'</div><div class="legend"><span><i class="bi"></i>Ideal</span><span><i class="br"></i>Real</span></div></div>';
+  h+='<div class="card"><h2>💡 Lo que dicen los datos</h2><ul class="insight-list">'+scInsights().map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul>'+
+    '<h3>Para conversar en equipo</h3><ol class="insight-list"><li>¿Qué cambió entre el primer y el último sprint? ¿Por qué?</li><li>¿Qué pasó con las historias que se empezaron y no se terminaron?</li><li>¿Cómo ayudó la Retrospectiva a mejorar el siguiente sprint?</li><li>¿Qué fue distinto frente al modo Kanban: el flujo continuo o los sprints de tiempo fijo?</li></ol>'+
+    '<p style="margin:14px 0 0"><button type="button" class="btn ghost" data-act="sc-copy">📋 Copiar resumen (para Google Sheets)</button> <button type="button" class="btn primary" data-act="sc-reset">↺ Jugar otra vez</button></p></div>';
+  h+=scRolesCardHTML();
+  return h;
+}
+function scCopySummary(){
+  var head=['Sprint','Meta','Pronostico','Alcance_agregado','Velocidad','Aceptadas','Rechazadas','Sin_terminar','Valor','Tiradas','Tiradas_max','Aplicados','Desperdiciados','Eficiencia_%','Tiempo_prom_historia','Meta_cumplida','Cambio_urgente','Compromiso'].join('\t');
+  var rows=SC.sprints.filter(function(s){ return s.m; }).map(function(s){
+    var m=s.m;
+    return [s.no, s.goal, m.forecast, m.scope, m.velocity, m.acceptedN, m.rejectedN, m.unfinishedN, m.value, m.rolls, m.rollsMax, m.applied, m.wasted, m.eff,
+            m.cycleMs===null?'':fmtMs(m.cycleMs), GOAL_TXT[m.goalMet]||'', s.urgent?s.urgent.decision:'', s.retro.commit||''].join('\t');
+  });
+  var text=[head].concat(rows).join('\n');
+  var m=openModal({
+    title:'Resumen listo para Google Sheets',
+    html:'<p>Copia y pega en una hoja de cálculo (cada columna caerá en su celda).</p><textarea id="scLogArea" readonly></textarea><div class="merr" id="mErr" role="alert"></div>',
+    onOpen:function(root){ $('#scLogArea',root).value=text; },
+    buttons:[
+      { label:'Copiar', kind:'primary', onClick:function(root){
+          var ta=$('#scLogArea',root);
+          copyText(text, ta).then(function(ok){
+            if(ok){ m.close(); scBanner={ kind:'ok', icon:'📋', title:'Resumen copiado', items:['Pégalo en Google Sheets con Ctrl+V.'] }; scRenderPlay(); }
+            else { $('#mErr',root).textContent='No se pudo copiar automáticamente: el texto quedó seleccionado, presiona Ctrl+C.'; ta.focus(); ta.select(); }
+          });
+          return false;
+        } },
+      { label:'Cerrar', kind:'ghost' }
+    ]
+  });
+}
+function scOpenReset(){
+  openModal({
+    title:'¿Reiniciar la simulación Scrum?',
+    html:'<p>Se borrarán el equipo, el backlog, los sprints y los resultados. Volverás a la pantalla de configuración.</p>',
+    buttons:[
+      { label:'Sí, reiniciar', kind:'accent', onClick:function(){
+          clearTimeout(scRollTimer); clearInterval(scRollInterval); scRolling=false; scStopTicker();
+          SC=null; scBanner=null; scTeamDraft=null; scRowsN=0; scOpen={}; scRetroTmp={ start:'', stop:'', cont:'' };
+          scSave(); scUpdateSetup(true); render(); window.scrollTo(0,0);
+        } },
+      { label:'Cancelar', kind:'ghost' }
+    ]
+  });
+}
+
+/* ================== render del modo Scrum ================== */
+function scHeaderHTML(){
+  var n=SC.sprintNo, N=SC.cfg.sprints, ph=SC.phase;
+  var steps=['Planeación','Sprint','Revisión','Retrospectiva'], idx={ planning:0, sprint:1, review:2, retro:3, final:4 }[ph];
+  var team='🎯 PO: '+poName()+' · 🧭 SM: '+smName()+' · 💻 Desarrolladores: '+scDevs().map(function(d){ return esc(d.name); }).join(', ');
+  var h='<div class="card"><div class="summary"><div><strong>'+(ph==='final'?'Fin de la simulación Scrum':'Sprint '+n+' de '+N)+'</strong><div class="muted small">'+team+'</div></div>'+
+    '<button class="btn ghost" type="button" data-act="sc-reset">↺ Reiniciar</button></div>';
+  if(ph!=='final'){
+    h+='<ol class="stepper" aria-label="Eventos de Scrum">'+steps.map(function(s,i){
+      return '<li class="step'+(i===idx?' on':(i<idx?' past':''))+'"'+(i===idx?' aria-current="step"':'')+'>'+s+'</li>';
+    }).join('')+'</ol>';
+  }
+  return h+'</div>';
+}
+function scRenderPlay(){
+  if(!SC) return;
+  var body;
+  switch(SC.phase){
+    case 'planning': body=scPlanningHTML()+scRolesCardHTML(); break;
+    case 'sprint':   body=scSprintHTML(); break;
+    case 'review':   body=scReviewHTML(); break;
+    case 'retro':    body=scRetroHTML(); break;
+    default:         body=scFinalHTML();
+  }
+  $('#scContent').innerHTML=(SC.phase==='sprint'?scTimerBarHTML():'')+scHeaderHTML()+body;
+  if(SC.phase==='sprint') scTickUI();
+}
+function scRender(){
+  var setup=$('#scSetup'), play=$('#scPlay');
+  if(!SC || mode!=='scrum'){
+    setup.hidden=(mode!=='scrum'); play.hidden=true;
+    return;
+  }
+  setup.hidden=true; play.hidden=false;
+  scRenderPlay();
+}
+function renderModeBox(){
+  var box=$('#modeBox'), active=!!S || (!!SC && mode==='scrum');
+  box.hidden=active;
+  var rk=document.querySelector('input[name="simMode"][value="kanban"]'), rs=document.querySelector('input[name="simMode"][value="scrum"]');
+  rk.checked=(mode==='kanban'); rs.checked=(mode==='scrum');
+  $('#modeCardK').classList.toggle('sel', mode==='kanban');
+  $('#modeCardS').classList.toggle('sel', mode==='scrum');
+  $('#help').hidden=(mode!=='kanban');
+  $('#scHelp').hidden=(mode!=='scrum');
+}
+function render(){ kRender(); scRender(); renderModeBox(); }
+
+/* ================== eventos del modo Scrum ================== */
+document.addEventListener('click', function(e){
+  var b=e.target.closest('[data-act^="sc-"]'); if(!b || b.disabled || !SC && b.getAttribute('data-act')!=='sc-start') return;
+  var act=b.getAttribute('data-act'), id=b.getAttribute('data-id'), col=b.getAttribute('data-col'), i=parseInt(b.getAttribute('data-i'),10);
+  switch(act){
+    case 'sc-start': scStart(); break;
+    case 'sc-top': scMovePB(id,'top'); break;
+    case 'sc-up': scMovePB(id,-1); break;
+    case 'sc-down': scMovePB(id,1); break;
+    case 'sc-add': scAddToSprint(id); break;
+    case 'sc-remove': scRemoveFromSprint(id); break;
+    case 'sc-startsprint': scStartSprint(); break;
+    case 'sc-take': scTake(id); break;
+    case 'sc-roll': scRoll(b.getAttribute('data-dev')); break;
+    case 'sc-apply': scApply(id); break;
+    case 'sc-accept': scDecide(id,'ok'); break;
+    case 'sc-reject': scDecide(id,'no'); break;
+    case 'sc-confirm': scConfirmReview(); break;
+    case 'sc-toretro': scBanner=null; scGoto('retro'); break;
+    case 'sc-retro-add': scRetroAdd(col); break;
+    case 'sc-retro-del': scCur().retro[col].splice(i,1); scSave(); scRenderPlay(); break;
+    case 'sc-retro-pick': scCur().retro.commit=scCur().retro[col][i]; scSave(); scRenderPlay(); break;
+    case 'sc-sugg': var sg=scSuggestions(scCur())[i]; scOpen.scSuggDet=true; if(sg) scRetroAdd(sg.col, sg.text); break;
+    case 'sc-retro-done': scRetroDone(); break;
+    case 'sc-copy': scCopySummary(); break;
+    case 'sc-reset': scOpenReset(); break;
+  }
+});
+document.addEventListener('input', function(e){
+  var t=e.target;
+  if(t.classList && t.classList.contains('tr-name')){ var k=parseInt(t.getAttribute('data-i'),10); if(scTeamDraft && scTeamDraft[k]) scTeamDraft[k].name=t.value; }
+  else if(t.id==='scGoal' && SC){ scCur().goal=t.value; scSave(); }
+  else if(t.getAttribute && t.getAttribute('data-sc-input')==='commit' && SC){ scCur().retro.commit=t.value; scSave(); }
+  else if(t.classList && t.classList.contains('retro-in')){ scRetroTmp[t.getAttribute('data-col')]=t.value; }
+});
+document.addEventListener('change', function(e){
+  var t=e.target;
+  if(t.classList && t.classList.contains('tr-role')){ var k=parseInt(t.getAttribute('data-i'),10); if(scTeamDraft && scTeamDraft[k]) scTeamDraft[k].role=t.value; scTeamSummary(); }
+  else if(t.id==='scSize' || t.id==='scMin'){ scUpdateSetup(false); }
+  else if(t.getAttribute && t.getAttribute('data-sc-input')==='goalmet' && SC){ scCur().review.goalMet=t.value||null; scSave(); scRenderPlay(); var gm=$('#scGoalMet'); if(gm) gm.focus(); }
+  else if(t.name==='simMode'){ mode=t.value; render(); }
+});
+document.addEventListener('keydown', function(e){
+  if(e.key==='Enter' && e.target.classList && e.target.classList.contains('retro-in')){ e.preventDefault(); scRetroAdd(e.target.getAttribute('data-col')); }
+});
+document.addEventListener('toggle', function(e){
+  var t=e.target; if(!t || !t.id) return;
+  if(t.id==='scRolesDet') scRolesOpen=t.open;
+  else if(t.id==='scHintDet' || t.id==='scSuggDet' || t.id==='scHistDet') scOpen[t.id]=t.open;
+}, true);
+
+/* ================== arranque ================== */
+initSetup();
+scInitSetup();
+S = load();
+SC = scLoad();
+if(S){ mode='kanban'; } else if(SC){ mode='scrum'; }
+if(S){
+  optDice.value=String(S.cfg.dice);
+  if(S.finished){ stopTicker(); }
+  else if(S.endAt-Date.now()<=0){ render(); endSim(); }
+  else { render(); startTicker(); }
+}
+if(SC && mode==='scrum' && SC.phase==='sprint'){
+  if(Date.now()>=scCur().endAt){ render(); scEndSprint(); }
+  else { render(); scStartTicker(); }
+}
+render();
+
+})();
+</script>
+<script>
+/* Si el simulador está dentro de index.html, «Volver» cambia de pestaña sin recargar la página. */
+(function(){
+  var a = document.getElementById('volver'); if(!a) return;
+  a.addEventListener('click', function(e){
+    if(window.parent && window.parent !== window){
+      e.preventDefault();
+      window.parent.postMessage({ tipo:'ir-a', tab:'infografia' }, location.origin === 'null' ? '*' : location.origin);
+    }
+  });
+})();
+</script>
+</body>
+</html>
